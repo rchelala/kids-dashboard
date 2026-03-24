@@ -953,7 +953,156 @@ label.admin-label {
 .toggle input:checked + .toggle-slider { background: var(--teal); }
 .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
 
-/* History section */
+/* ── Login Screen ─────────────────────────────────────────────────────────── */
+.login-screen {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+}
+
+.login-rocket {
+  font-size: 3.5rem;
+  animation: bounce-big 1.2s ease-in-out infinite alternate;
+}
+
+.login-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 2rem;
+  color: var(--gold);
+  font-weight: 400;
+}
+
+.login-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.login-code-input {
+  width: 100%;
+  text-align: center;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
+}
+
+/* ── Mobile responsive ────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  html, body, #root {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto;
+  }
+
+  .app {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .kiosk-layout {
+    height: auto;
+    min-height: 100vh;
+    grid-template-rows: auto auto auto;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .middle-section {
+    grid-template-columns: 1fr;
+  }
+
+  .clock-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 6px;
+    padding: 14px 16px;
+  }
+
+  .clock-time {
+    font-size: 3rem;
+  }
+
+  .clock-greeting {
+    font-size: 1.1rem;
+  }
+
+  .clock-date {
+    text-align: center;
+  }
+
+  .left-panel,
+  .right-panel {
+    overflow: visible;
+  }
+
+  .chore-list {
+    overflow: visible;
+  }
+
+  .admin-btn {
+    opacity: 0.6;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  .admin-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .admin-modal {
+    max-height: 92vh;
+    border-radius: 20px 20px 0 0;
+    max-width: 100%;
+  }
+
+  .admin-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .admin-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-btn {
+    white-space: nowrap;
+    font-size: 0.8rem;
+    padding: 7px 12px;
+  }
+}
+
+/* ── History section */
 .history-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));

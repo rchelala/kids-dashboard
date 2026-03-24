@@ -11,6 +11,17 @@ module.exports = async function handler(req, res) {
 
   try {
 
+    // POST /api/auth
+    if (method === 'POST' && path === 'auth') {
+      const { code } = req.body || {}
+      if (!code) return res.status(400).json({ success: false })
+      const settings = await getSettings()
+      if (code === settings.adminPassword) return res.json({ success: true, role: 'admin' })
+      const viewerCode = settings.viewerCode || 'ASHER2024'
+      if (code === viewerCode) return res.json({ success: true, role: 'viewer' })
+      return res.status(401).json({ success: false })
+    }
+
     // GET /api/settings
     if (method === 'GET' && path === 'settings') {
       const settings = await getSettings()

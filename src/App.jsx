@@ -5,6 +5,25 @@ import CalendarView from './components/CalendarView'
 import AlarmDisplay from './components/AlarmDisplay'
 import Celebration from './components/Celebration'
 import AdminPanel from './components/AdminPanel'
+import LoginScreen from './components/LoginScreen'
+
+const SESSION_KEY = 'kid_dash_session'
+const SESSION_DAYS = 30
+
+function getStoredAuth() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY)
+    if (!raw) return null
+    const { role, exp } = JSON.parse(raw)
+    if (Date.now() > exp) { localStorage.removeItem(SESSION_KEY); return null }
+    return role
+  } catch { return null }
+}
+
+function saveAuth(role) {
+  const exp = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ role, exp }))
+}
 
 const DAY_MAP = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
 
@@ -18,6 +37,7 @@ function isWeekend() {
 }
 
 export default function App() {
+  const [authRole, setAuthRole] = useState(() => getStoredAuth())
   const [chores, setChores] = useState(null)
   const [alarms, setAlarms] = useState([])
   const [events, setEvents] = useState([])
@@ -151,6 +171,15 @@ export default function App() {
   const handleAdminClose = () => {
     setShowAdmin(false)
     fetchData()
+  }
+
+  function handleLogin(role) {
+    saveAuth(role)
+    setAuthRole(role)
+  }
+
+  if (!authRole) {
+    return <LoginScreen onLogin={handleLogin} />
   }
 
   if (!settings) {

@@ -72,6 +72,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   const [newAllowance, setNewAllowance] = useState('')
   const [newDeduction, setNewDeduction] = useState('')
   const [newPassword, setNewPassword] = useState('')
+  const [newViewerCode, setNewViewerCode] = useState('')
   const [settingsSaved, setSettingsSaved] = useState(false)
 
   // ── Auth ────────────────────────────────────────────────────────────────────
@@ -257,6 +258,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     if (newAllowance) body.allowanceAmount = Number(newAllowance)
     if (newDeduction) body.deductionPerMissedChore = Number(newDeduction)
     if (newPassword.trim()) body.adminPassword = newPassword.trim()
+    if (newViewerCode.trim()) body.viewerCode = newViewerCode.trim()
     if (Object.keys(body).length === 0) return
     await fetch('/api/admin/settings', {
       method: 'PUT',
@@ -265,7 +267,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     })
     setSettingsSaved(true)
     setTimeout(() => setSettingsSaved(false), 2000)
-    setNewName(''); setNewAllowance(''); setNewDeduction(''); setNewPassword('')
+    setNewName(''); setNewAllowance(''); setNewDeduction(''); setNewPassword(''); setNewViewerCode('')
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -761,6 +763,21 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                   <div className="admin-input-group">
                     <label className="admin-label">New Admin Password (leave blank to keep current)</label>
                     <input type="password" className="admin-input" placeholder="New password..." value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                  </div>
+
+                  <div className="admin-section-title" style={{ marginTop: 16 }}>Family Invite Code</div>
+                  <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>
+                    Share this code with your wife so she can view the dashboard on her phone.
+                  </div>
+                  <div style={{ background: 'rgba(78,205,196,0.1)', border: '1px solid rgba(78,205,196,0.3)', borderRadius: 12, padding: '10px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: '1.2rem' }}>🔑</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: '1.2rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: 2 }}>
+                      {settings?.viewerCode || 'ASHER2024'}
+                    </span>
+                  </div>
+                  <div className="admin-input-group">
+                    <label className="admin-label">New Invite Code (leave blank to keep current)</label>
+                    <input className="admin-input" placeholder="e.g. FAMILY2025" value={newViewerCode} onChange={e => setNewViewerCode(e.target.value)} />
                   </div>
                   <button className="admin-btn-add" onClick={saveSettings}>
                     {settingsSaved ? '✅ Saved!' : 'Save Changes'}

@@ -30,7 +30,8 @@ async function getSettings() {
     allowanceAmount: Number(data.allowance_amount),
     deductionPerMissedChore: Number(data.deduction_per_missed_chore),
     weekStartDay: data.week_start_day,
-    icalUrl: data.ical_url
+    icalUrl: data.ical_url,
+    viewerCode: data.viewer_code || 'ASHER2024'
   }
 }
 
@@ -42,6 +43,7 @@ async function updateSettings(updates) {
   if (updates.deductionPerMissedChore !== undefined) dbUpdates.deduction_per_missed_chore = updates.deductionPerMissedChore
   if (updates.weekStartDay !== undefined) dbUpdates.week_start_day = updates.weekStartDay
   if (updates.icalUrl !== undefined) dbUpdates.ical_url = updates.icalUrl
+  if (updates.viewerCode !== undefined) dbUpdates.viewer_code = updates.viewerCode
   const { data } = await supabase.from('settings').update(dbUpdates).eq('id', 1).select().single()
   if (!data) return null
   return {
