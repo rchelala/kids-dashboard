@@ -4,7 +4,9 @@
       "Bash(npm install:*)",
       "Read(//c/Users/rober/.claude/projects/c--Users-rober-OneDrive-Documents-Kid-Everyday-App/memory/**)",
       "Bash(node -e \"const fs = require\\(''fs''\\); const d = JSON.parse\\(fs.readFileSync\\(''data/chores.json''\\)\\); console.log\\(JSON.stringify\\(d, null, 2\\)\\)\")",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(rm -f api/settings.js api/alarms.js api/calendar.js api/balance.js)",
+      "Bash(rm -rf api/chores api/admin)"
     ],
     "additionalDirectories": [
       "c:\\Users\\rober\\.claude\\projects\\c--Users-rober-OneDrive-Documents-Kid-Everyday-App\\memory"
