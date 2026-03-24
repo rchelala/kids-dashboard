@@ -5,7 +5,7 @@ const {
 const { supabase } = require('./_lib/supabase')
 
 module.exports = async function handler(req, res) {
-  const slug = Array.isArray(req.query.slug) ? req.query.slug : [req.query.slug].filter(Boolean)
+  const slug = (req.query.path || '').split('/').filter(Boolean)
   const path = slug.join('/')
   const method = req.method
 
