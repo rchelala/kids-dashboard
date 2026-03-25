@@ -148,6 +148,22 @@ module.exports = async function handler(req, res) {
       return res.json(allKids || [])
     }
 
+    // DELETE /api/families/kids/:id — remove a kid and all their data
+    if (method === 'DELETE' && slug[0] === 'families' && slug[1] === 'kids' && slug[2]) {
+      if (!familyId) return res.status(403).json({ error: 'No family' })
+      const targetKidId = slug[2]
+      // Verify kid belongs to this family
+      const { data: kidCheck } = await supabase.from('kids').select('id').eq('id', targetKidId).eq('family_id', familyId).single()
+      if (!kidCheck) return res.status(403).json({ error: 'Kid not in family' })
+      // Delete associated data
+      await supabase.from('chores').delete().eq('kid_id', targetKidId)
+      await supabase.from('balance').delete().eq('kid_id', targetKidId)
+      await supabase.from('alarms').delete().eq('kid_id', targetKidId)
+      await supabase.from('kids').delete().eq('id', targetKidId)
+      const { data: allKids } = await supabase.from('kids').select('*').eq('family_id', familyId).order('created_at')
+      return res.json(allKids || [])
+    }
+
     // POST /api/admin/login — verify admin PIN for the settings panel
     if (method === 'POST' && path === 'admin/login') {
       if (!familyId) return res.status(403).json({ error: 'No family' })

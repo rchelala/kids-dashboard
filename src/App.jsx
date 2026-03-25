@@ -234,6 +234,7 @@ export default function App() {
           events={events}
           settings={settings}
           balance={balance}
+          kid={authCtx.kid}
           familyId={authCtx.familyId}
           authFetch={authFetch}
           onClose={handleAdminClose}

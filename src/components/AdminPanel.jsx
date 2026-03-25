@@ -19,7 +19,7 @@ function formatDate(dateStr) {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function AdminPanel({ chores, alarms, events, settings, balance, familyId, authFetch, onClose }) {
+export default function AdminPanel({ chores, alarms, events, settings, balance, kid, familyId, authFetch, onClose }) {
   const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')
   const [pwError, setPwError] = useState('')
@@ -82,6 +82,12 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     setKids(await res.json())
     setNewKidName('')
     setNewKidEmoji('⭐')
+  }
+
+  async function removeKid(kidId) {
+    if (!window.confirm('Remove this kid? This permanently deletes all their chores, balance, and alarms.')) return
+    const res = await authFetch(`/api/families/kids/${kidId}`, { method: 'DELETE' })
+    setKids(await res.json())
   }
 
   // Wallet form
@@ -745,10 +751,16 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                 <>
                   <div className="admin-section-title">Your Kids</div>
                   <div className="admin-list">
-                    {(kids || []).map(kid => (
-                      <div key={kid.id} className="admin-list-item">
-                        <span style={{ fontSize: '1.5rem' }}>{kid.emoji}</span>
-                        <div className="admin-list-item-info">{kid.name}</div>
+                    {(kids || []).map(k => (
+                      <div key={k.id} className="admin-list-item">
+                        <span style={{ fontSize: '1.5rem' }}>{k.emoji}</span>
+                        <div className="admin-list-item-info">
+                          {k.name}
+                          {k.id === kid?.id && <span style={{ fontSize: '0.75rem', color: 'var(--teal)', marginLeft: 8 }}>active</span>}
+                        </div>
+                        {k.id !== kid?.id && (
+                          <button className="admin-btn-danger" onClick={() => removeKid(k.id)}>Remove</button>
+                        )}
                       </div>
                     ))}
                     {kids !== null && kids.length === 0 && (
