@@ -238,6 +238,7 @@ export default function App() {
           familyId={authCtx.familyId}
           authFetch={authFetch}
           onClose={handleAdminClose}
+          onSwitchKid={handleSwitchKid}
         />
       )}
     </div>

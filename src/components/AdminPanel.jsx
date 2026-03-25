@@ -19,7 +19,7 @@ function formatDate(dateStr) {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function AdminPanel({ chores, alarms, events, settings, balance, kid, familyId, authFetch, onClose }) {
+export default function AdminPanel({ chores, alarms, events, settings, balance, kid, familyId, authFetch, onClose, onSwitchKid }) {
   const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')
   const [pwError, setPwError] = useState('')
@@ -84,10 +84,12 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     setNewKidEmoji('⭐')
   }
 
-  async function removeKid(kidId) {
+  async function removeKid(targetId) {
     if (!window.confirm('Remove this kid? This permanently deletes all their chores, balance, and alarms.')) return
-    const res = await authFetch(`/api/families/kids/${kidId}`, { method: 'DELETE' })
-    setKids(await res.json())
+    const res = await authFetch(`/api/families/kids/${targetId}`, { method: 'DELETE' })
+    const remaining = await res.json()
+    setKids(remaining)
+    if (targetId === kid?.id) onSwitchKid?.()
   }
 
   // Wallet form
@@ -758,9 +760,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                           {k.name}
                           {k.id === kid?.id && <span style={{ fontSize: '0.75rem', color: 'var(--teal)', marginLeft: 8 }}>active</span>}
                         </div>
-                        {k.id !== kid?.id && (
-                          <button className="admin-btn-danger" onClick={() => removeKid(k.id)}>Remove</button>
-                        )}
+                        <button className="admin-btn-danger" onClick={() => removeKid(k.id)}>Remove</button>
                       </div>
                     ))}
                     {kids !== null && kids.length === 0 && (
