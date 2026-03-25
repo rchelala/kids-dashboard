@@ -19,7 +19,7 @@ function formatDate(dateStr) {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function AdminPanel({ chores, alarms, events, settings, balance, onClose }) {
+export default function AdminPanel({ chores, alarms, events, settings, balance, familyId, authFetch, onClose }) {
   const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')
   const [pwError, setPwError] = useState('')
@@ -71,15 +71,15 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   const [newName, setNewName] = useState('')
   const [newAllowance, setNewAllowance] = useState('')
   const [newDeduction, setNewDeduction] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [newViewerCode, setNewViewerCode] = useState('')
+  const [newAdminPin, setNewAdminPin] = useState('')
+  const [newInviteCode, setNewInviteCode] = useState('')
   const [settingsSaved, setSettingsSaved] = useState(false)
 
   // ── Auth ────────────────────────────────────────────────────────────────────
 
   async function handleLogin(e) {
     e.preventDefault()
-    const res = await fetch('/api/admin/login', {
+    const res = await authFetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password })
@@ -92,7 +92,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
 
   async function addWeekdayChore() {
     if (!newWdName.trim()) return
-    const res = await fetch('/api/admin/chores/weekday', {
+    const res = await authFetch('/api/admin/chores/weekday', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newWdName.trim(), emoji: newWdEmoji })
@@ -103,7 +103,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function deleteWeekdayChore(id) {
-    const res = await fetch(`/api/admin/chores/weekday/${id}`, { method: 'DELETE' })
+    const res = await authFetch(`/api/admin/chores/weekday/${id}`, { method: 'DELETE' })
     setLocalChores(await res.json())
   }
 
@@ -111,7 +111,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
 
   async function addToPool() {
     if (!newWeName.trim()) return
-    const res = await fetch('/api/admin/chores/weekend/pool', {
+    const res = await authFetch('/api/admin/chores/weekend/pool', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newWeName.trim(), emoji: newWeEmoji })
@@ -123,7 +123,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function removeFromPool(id) {
-    const res = await fetch(`/api/admin/chores/weekend/pool/${id}`, { method: 'DELETE' })
+    const res = await authFetch(`/api/admin/chores/weekend/pool/${id}`, { method: 'DELETE' })
     setLocalChores(await res.json())
     setPendingActive(null)
   }
@@ -136,7 +136,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function saveWeekendActivation() {
-    const res = await fetch('/api/admin/chores/weekend/activate', {
+    const res = await authFetch('/api/admin/chores/weekend/activate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ active: activeWeekend })
@@ -147,7 +147,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
 
   async function addCustomWeekendChore() {
     if (!customChoreName.trim()) return
-    const res = await fetch('/api/admin/chores/weekend/custom', {
+    const res = await authFetch('/api/admin/chores/weekend/custom', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: customChoreName.trim(), emoji: customChoreEmoji })
@@ -159,7 +159,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function resetWeek() {
-    const res = await fetch('/api/admin/chores/reset', { method: 'POST' })
+    const res = await authFetch('/api/admin/chores/reset', { method: 'POST' })
     setLocalChores(await res.json())
   }
 
@@ -167,7 +167,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
 
   async function addAlarm() {
     if (!newAlarmTime || newAlarmDays.length === 0) return
-    const res = await fetch('/api/admin/alarms', {
+    const res = await authFetch('/api/admin/alarms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ time: newAlarmTime, label: newAlarmLabel, days: newAlarmDays, sound: newAlarmSound })
@@ -178,7 +178,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function toggleAlarm(alarm) {
-    const res = await fetch(`/api/admin/alarms/${alarm.id}`, {
+    const res = await authFetch(`/api/admin/alarms/${alarm.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled: !alarm.enabled })
@@ -187,7 +187,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function deleteAlarm(id) {
-    const res = await fetch(`/api/admin/alarms/${id}`, { method: 'DELETE' })
+    const res = await authFetch(`/api/admin/alarms/${id}`, { method: 'DELETE' })
     setLocalAlarms(await res.json())
   }
 
@@ -199,7 +199,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
 
   async function addEvent() {
     if (!newEventTitle.trim() || !newEventDate) return
-    const res = await fetch('/api/admin/calendar', {
+    const res = await authFetch('/api/admin/calendar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: newEventTitle.trim(), date: newEventDate, emoji: newEventEmoji, color: newEventColor })
@@ -210,12 +210,12 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function deleteEvent(id) {
-    const res = await fetch(`/api/admin/calendar/${id}`, { method: 'DELETE' })
+    const res = await authFetch(`/api/admin/calendar/${id}`, { method: 'DELETE' })
     setLocalEvents(await res.json())
   }
 
   async function saveIcalUrl() {
-    await fetch('/api/admin/settings', {
+    await authFetch('/api/admin/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ icalUrl: icalInput.trim() || null })
@@ -229,7 +229,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   async function logSpend() {
     const amt = parseFloat(spendAmount)
     if (isNaN(amt) || amt <= 0) return
-    const res = await fetch('/api/admin/balance/spend', {
+    const res = await authFetch('/api/admin/balance/spend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount: amt, note: spendNote.trim() || 'Purchase' })
@@ -241,7 +241,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   async function adjustBalance() {
     const amt = parseFloat(adjustAmount)
     if (isNaN(amt)) return
-    const res = await fetch('/api/admin/balance/adjust', {
+    const res = await authFetch('/api/admin/balance/adjust', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount: amt, note: adjustNote.trim() || 'Manual adjustment' })
@@ -257,17 +257,17 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     if (newName.trim()) body.childName = newName.trim()
     if (newAllowance) body.allowanceAmount = Number(newAllowance)
     if (newDeduction) body.deductionPerMissedChore = Number(newDeduction)
-    if (newPassword.trim()) body.adminPassword = newPassword.trim()
-    if (newViewerCode.trim()) body.viewerCode = newViewerCode.trim()
+    if (newAdminPin.trim()) body.adminPin = newAdminPin.trim()
+    if (newInviteCode.trim()) body.inviteCode = newInviteCode.trim().toUpperCase()
     if (Object.keys(body).length === 0) return
-    await fetch('/api/admin/settings', {
+    await authFetch('/api/admin/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     })
     setSettingsSaved(true)
     setTimeout(() => setSettingsSaved(false), 2000)
-    setNewName(''); setNewAllowance(''); setNewDeduction(''); setNewPassword(''); setNewViewerCode('')
+    setNewName(''); setNewAllowance(''); setNewDeduction(''); setNewAdminPin(''); setNewInviteCode('')
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -760,24 +760,28 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                     <label className="admin-label">Deduction per Missed Chore ($)</label>
                     <input type="number" className="admin-input" placeholder={settings?.deductionPerMissedChore ?? 0.25} value={newDeduction} min="0" step="0.05" onChange={e => setNewDeduction(e.target.value)} />
                   </div>
-                  <div className="admin-input-group">
-                    <label className="admin-label">New Admin Password (leave blank to keep current)</label>
-                    <input type="password" className="admin-input" placeholder="New password..." value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-                  </div>
-
                   <div className="admin-section-title" style={{ marginTop: 16 }}>Family Invite Code</div>
                   <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>
-                    Share this code with your wife so she can view the dashboard on her phone.
+                    Share this with your partner so they can join the family.
                   </div>
                   <div style={{ background: 'rgba(78,205,196,0.1)', border: '1px solid rgba(78,205,196,0.3)', borderRadius: 12, padding: '10px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontSize: '1.2rem' }}>🔑</span>
                     <span style={{ fontFamily: 'monospace', fontSize: '1.2rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: 2 }}>
-                      {settings?.viewerCode || 'ASHER2024'}
+                      {settings?.inviteCode || '—'}
                     </span>
                   </div>
                   <div className="admin-input-group">
                     <label className="admin-label">New Invite Code (leave blank to keep current)</label>
-                    <input className="admin-input" placeholder="e.g. FAMILY2025" value={newViewerCode} onChange={e => setNewViewerCode(e.target.value)} />
+                    <input className="admin-input" placeholder="e.g. RCFAMILY" value={newInviteCode} onChange={e => setNewInviteCode(e.target.value.toUpperCase())} />
+                  </div>
+
+                  <div className="admin-section-title" style={{ marginTop: 16 }}>Settings Panel PIN</div>
+                  <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>
+                    PIN to unlock this settings panel (so kids can't change things).
+                  </div>
+                  <div className="admin-input-group">
+                    <label className="admin-label">New PIN (leave blank to keep current)</label>
+                    <input type="password" className="admin-input" placeholder="New PIN..." value={newAdminPin} onChange={e => setNewAdminPin(e.target.value)} />
                   </div>
                   <button className="admin-btn-add" onClick={saveSettings}>
                     {settingsSaved ? '✅ Saved!' : 'Save Changes'}

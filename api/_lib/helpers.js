@@ -19,46 +19,55 @@ function getTodayKey() {
   return new Date().toISOString().split('T')[0]
 }
 
-// ── Settings ──────────────────────────────────────────────────────────────────
+// ── Settings (from kids table) ────────────────────────────────────────────────
 
-async function getSettings() {
-  const { data } = await supabase.from('settings').select('*').eq('id', 1).single()
+async function getSettings(kidId) {
+  const { data } = await supabase.from('kids').select('*').eq('id', kidId).single()
   if (!data) return null
   return {
-    childName: data.child_name,
-    adminPassword: data.admin_password,
+    childName: data.name,
+    kidEmoji: data.emoji,
     allowanceAmount: Number(data.allowance_amount),
     deductionPerMissedChore: Number(data.deduction_per_missed_chore),
-    weekStartDay: data.week_start_day,
-    icalUrl: data.ical_url,
-    viewerCode: data.viewer_code || 'ASHER2024'
-  }
-}
-
-async function updateSettings(updates) {
-  const dbUpdates = {}
-  if (updates.childName !== undefined) dbUpdates.child_name = updates.childName
-  if (updates.adminPassword !== undefined) dbUpdates.admin_password = updates.adminPassword
-  if (updates.allowanceAmount !== undefined) dbUpdates.allowance_amount = updates.allowanceAmount
-  if (updates.deductionPerMissedChore !== undefined) dbUpdates.deduction_per_missed_chore = updates.deductionPerMissedChore
-  if (updates.weekStartDay !== undefined) dbUpdates.week_start_day = updates.weekStartDay
-  if (updates.icalUrl !== undefined) dbUpdates.ical_url = updates.icalUrl
-  if (updates.viewerCode !== undefined) dbUpdates.viewer_code = updates.viewerCode
-  const { data } = await supabase.from('settings').update(dbUpdates).eq('id', 1).select().single()
-  if (!data) return null
-  return {
-    childName: data.child_name,
-    allowanceAmount: Number(data.allowance_amount),
-    deductionPerMissedChore: Number(data.deduction_per_missed_chore),
-    weekStartDay: data.week_start_day,
     icalUrl: data.ical_url
   }
 }
 
+async function updateSettings(kidId, updates) {
+  const dbUpdates = {}
+  if (updates.childName !== undefined) dbUpdates.name = updates.childName
+  if (updates.allowanceAmount !== undefined) dbUpdates.allowance_amount = updates.allowanceAmount
+  if (updates.deductionPerMissedChore !== undefined) dbUpdates.deduction_per_missed_chore = updates.deductionPerMissedChore
+  if (updates.icalUrl !== undefined) dbUpdates.ical_url = updates.icalUrl
+  const { data } = await supabase.from('kids').update(dbUpdates).eq('id', kidId).select().single()
+  if (!data) return null
+  return {
+    childName: data.name,
+    kidEmoji: data.emoji,
+    allowanceAmount: Number(data.allowance_amount),
+    deductionPerMissedChore: Number(data.deduction_per_missed_chore),
+    icalUrl: data.ical_url
+  }
+}
+
+// ── Family info ───────────────────────────────────────────────────────────────
+
+async function getFamilyInfo(familyId) {
+  const { data } = await supabase.from('families').select('invite_code, admin_pin').eq('id', familyId).single()
+  return data ? { inviteCode: data.invite_code, adminPin: data.admin_pin } : null
+}
+
+async function updateFamilyInfo(familyId, updates) {
+  const dbUpdates = {}
+  if (updates.inviteCode !== undefined) dbUpdates.invite_code = updates.inviteCode
+  if (updates.adminPin !== undefined) dbUpdates.admin_pin = updates.adminPin
+  await supabase.from('families').update(dbUpdates).eq('id', familyId)
+}
+
 // ── Chores ────────────────────────────────────────────────────────────────────
 
-async function getChoresRaw() {
-  const { data } = await supabase.from('chores').select('*').eq('id', 1).single()
+async function getChoresRaw(kidId) {
+  const { data } = await supabase.from('chores').select('*').eq('kid_id', kidId).single()
   if (!data) return null
   return {
     currentWeek: data.current_week,
@@ -70,7 +79,7 @@ async function getChoresRaw() {
   }
 }
 
-async function writeChores(chores) {
+async function writeChores(chores, kidId) {
   await supabase.from('chores').update({
     current_week: chores.currentWeek,
     weekday: chores.weekday,
@@ -78,7 +87,7 @@ async function writeChores(chores) {
     celebration_shown: chores.celebrationShown,
     weekend_celebration_shown: chores.weekendCelebrationShown,
     history: chores.history
-  }).eq('id', 1)
+  }).eq('kid_id', kidId)
 }
 
 // ── Earnings ──────────────────────────────────────────────────────────────────
@@ -123,9 +132,9 @@ function calculateEarnings(chores, settings) {
 
 // ── Weekly reset ──────────────────────────────────────────────────────────────
 
-async function checkAndResetChores() {
-  const chores = await getChoresRaw()
-  const settings = await getSettings()
+async function checkAndResetChores(kidId) {
+  const chores = await getChoresRaw(kidId)
+  const settings = await getSettings(kidId)
   const currentWeek = getMondayKey()
 
   if (chores.currentWeek !== currentWeek) {
@@ -135,7 +144,7 @@ async function checkAndResetChores() {
     if (chores.history.length > 10) chores.history = chores.history.slice(-10)
 
     if (chores.currentWeek !== '2000-01-01' && lastEarnings.earnings > 0) {
-      const { data: balData } = await supabase.from('balance').select('*').eq('id', 1).single()
+      const { data: balData } = await supabase.from('balance').select('*').eq('kid_id', kidId).single()
       if (balData) {
         const newBal = Math.round((Number(balData.balance) + lastEarnings.earnings) * 100) / 100
         const txs = [...(balData.transactions || [])]
@@ -147,7 +156,7 @@ async function checkAndResetChores() {
           date: new Date().toISOString().split('T')[0]
         })
         if (txs.length > 50) txs.splice(0, txs.length - 50)
-        await supabase.from('balance').update({ balance: newBal, transactions: txs }).eq('id', 1)
+        await supabase.from('balance').update({ balance: newBal, transactions: txs }).eq('kid_id', kidId)
       }
     }
 
@@ -156,7 +165,7 @@ async function checkAndResetChores() {
     chores.currentWeek = currentWeek
     chores.celebrationShown = {}
     chores.weekendCelebrationShown = false
-    await writeChores(chores)
+    await writeChores(chores, kidId)
   }
   return chores
 }
@@ -209,6 +218,8 @@ module.exports = {
   getTodayKey,
   getSettings,
   updateSettings,
+  getFamilyInfo,
+  updateFamilyInfo,
   getChoresRaw,
   writeChores,
   calculateEarnings,

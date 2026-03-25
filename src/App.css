@@ -1013,6 +1013,20 @@ label.admin-label {
   letter-spacing: 3px;
 }
 
+.auth-link-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-family: var(--font);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: color 0.15s;
+}
+.auth-link-btn:hover { color: var(--text); }
+
 /* ── Mobile responsive ────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   html, body, #root {
