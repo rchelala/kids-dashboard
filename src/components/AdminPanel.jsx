@@ -61,6 +61,29 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   const [icalInput, setIcalInput] = useState(settings?.icalUrl || '')
   const [icalSaved, setIcalSaved] = useState(false)
 
+  // Kids tab
+  const [kids, setKids] = useState(null)
+  const [newKidName, setNewKidName] = useState('')
+  const [newKidEmoji, setNewKidEmoji] = useState('⭐')
+
+  async function loadKids() {
+    if (kids !== null) return
+    const res = await authFetch('/api/families/kids')
+    setKids(await res.json())
+  }
+
+  async function addKid() {
+    if (!newKidName.trim()) return
+    const res = await authFetch('/api/families/kids', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kidName: newKidName.trim(), kidEmoji: newKidEmoji })
+    })
+    setKids(await res.json())
+    setNewKidName('')
+    setNewKidEmoji('⭐')
+  }
+
   // Wallet form
   const [spendAmount, setSpendAmount] = useState('')
   const [spendNote, setSpendNote] = useState('')
@@ -300,13 +323,13 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
         ) : (
           <>
             <div className="admin-tabs">
-              {['chores', 'weekend', 'alarms', 'calendar', 'wallet', 'history', 'settings'].map(t => (
+              {['chores', 'weekend', 'alarms', 'calendar', 'wallet', 'history', 'kids', 'settings'].map(t => (
                 <button
                   key={t}
                   className={`tab-btn ${tab === t ? 'active' : ''}`}
-                  onClick={() => setTab(t)}
+                  onClick={() => { setTab(t); if (t === 'kids') loadKids() }}
                 >
-                  {{ chores: '📋 Weekday', weekend: '🌟 Weekend', alarms: '⏰ Alarms', calendar: '📅 Calendar', wallet: '🐷 Wallet', history: '📊 History', settings: '🔧 Settings' }[t]}
+                  {{ chores: '📋 Weekday', weekend: '🌟 Weekend', alarms: '⏰ Alarms', calendar: '📅 Calendar', wallet: '🐷 Wallet', history: '📊 History', kids: '👶 Kids', settings: '🔧 Settings' }[t]}
                 </button>
               ))}
             </div>
@@ -714,6 +737,50 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                       })}
                     </div>
                   )}
+                </>
+              )}
+
+              {/* ── KIDS ─────────────────────────────────────────────────── */}
+              {tab === 'kids' && (
+                <>
+                  <div className="admin-section-title">Your Kids</div>
+                  <div className="admin-list">
+                    {(kids || []).map(kid => (
+                      <div key={kid.id} className="admin-list-item">
+                        <span style={{ fontSize: '1.5rem' }}>{kid.emoji}</span>
+                        <div className="admin-list-item-info">{kid.name}</div>
+                      </div>
+                    ))}
+                    {kids !== null && kids.length === 0 && (
+                      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>No kids yet</div>
+                    )}
+                  </div>
+
+                  <div className="admin-section-title" style={{ marginTop: 16 }}>Add a Kid</div>
+                  <div className="admin-form-row" style={{ alignItems: 'flex-start' }}>
+                    <div className="admin-input-group">
+                      <label className="admin-label">Name</label>
+                      <input
+                        className="admin-input"
+                        placeholder="Kid's name"
+                        value={newKidName}
+                        onChange={e => setNewKidName(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addKid()}
+                      />
+                    </div>
+                    <button className="admin-btn-add" onClick={addKid}>Add</button>
+                  </div>
+                  <div>
+                    <label className="admin-label">Emoji</label>
+                    <div className="emoji-picker">
+                      {['⭐','🚀','🦁','🐉','🦊','🐬','🦋','🎮','⚽','🎵','🌟','🎯'].map(em => (
+                        <span key={em} className={`emoji-option ${newKidEmoji === em ? 'selected' : ''}`} onClick={() => setNewKidEmoji(em)}>{em}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 12, fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)' }}>
+                    After adding a kid, close this panel and tap the kid's name at the top of the dashboard to switch between kids.
+                  </div>
                 </>
               )}
 

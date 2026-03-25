@@ -136,6 +136,25 @@ html, body, #root {
   opacity: 1;
 }
 
+.switch-kid-btn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 99px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: var(--font);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+.switch-kid-btn:hover { opacity: 1; }
+
 .kiosk-layout {
   display: grid;
   grid-template-rows: auto 1fr auto;

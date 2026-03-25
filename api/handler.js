@@ -124,6 +124,30 @@ module.exports = async function handler(req, res) {
       return res.json(data || [])
     }
 
+    // POST /api/families/kids — add a new kid
+    if (method === 'POST' && path === 'families/kids') {
+      if (!familyId) return res.status(403).json({ error: 'No family' })
+      const { kidName, kidEmoji } = req.body
+      if (!kidName) return res.status(400).json({ error: 'Kid name required' })
+      const { data: kid } = await supabase
+        .from('kids')
+        .insert({ family_id: familyId, name: kidName, emoji: kidEmoji || '⭐' })
+        .select()
+        .single()
+      await supabase.from('chores').insert({
+        kid_id: kid.id,
+        current_week: getMondayKey(),
+        weekday: { items: [], completions: {} },
+        weekend: { pool: [], active: [], completions: {} },
+        celebration_shown: {},
+        weekend_celebration_shown: false,
+        history: []
+      })
+      await supabase.from('balance').insert({ kid_id: kid.id, balance: 0, transactions: [] })
+      const { data: allKids } = await supabase.from('kids').select('*').eq('family_id', familyId).order('created_at')
+      return res.json(allKids || [])
+    }
+
     // POST /api/admin/login — verify admin PIN for the settings panel
     if (method === 'POST' && path === 'admin/login') {
       if (!familyId) return res.status(403).json({ error: 'No family' })

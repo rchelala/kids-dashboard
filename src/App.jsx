@@ -168,6 +168,12 @@ export default function App() {
     fetchData()
   }
 
+  const handleSwitchKid = () => {
+    // Reset auth context — AuthFlow will reuse the existing session and show kid picker
+    setAuthCtx(null)
+    authCtxRef.current = null
+  }
+
   if (!authCtx) {
     return <AuthFlow onReady={handleReady} />
   }
@@ -184,6 +190,9 @@ export default function App() {
     <div className="app">
       <div className="stars-bg" />
       <button className="admin-btn" onClick={() => setShowAdmin(true)} title="Parent Settings">⚙️</button>
+      <button className="switch-kid-btn" onClick={handleSwitchKid} title="Switch kid">
+        {authCtx.kid.emoji} {authCtx.kid.name}
+      </button>
 
       <div className="kiosk-layout">
         <div className="top-section">
