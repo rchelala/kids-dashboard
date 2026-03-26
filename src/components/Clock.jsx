@@ -36,23 +36,17 @@ export default function Clock({ childName }) {
   const dateStr = `${DAYS[now.getDay()]}, ${MONTHS[now.getMonth()]} ${now.getDate()}`
 
   return (
-    <div className="clock-card">
-      <div>
-        <div className="clock-greeting">{greeting}, {childName}!</div>
+    <div className="clock-left">
+      <div className="clock-greeting">{greeting}, {childName}!</div>
+      <div className="clock-time">
+        {display}
+        <span style={{ fontSize: '2rem', color: 'rgba(255,255,255,0.5)', marginLeft: 4 }}>
+          :{seconds}
+        </span>
+        <span style={{ fontSize: '1.5rem', color: 'rgba(255,255,255,0.4)', marginLeft: 8 }}>
+          {ampm}
+        </span>
       </div>
-
-      <div style={{ textAlign: 'center' }}>
-        <div className="clock-time">
-          {display}
-          <span style={{ fontSize: '2rem', color: 'rgba(255,255,255,0.5)', marginLeft: 4 }}>
-            :{seconds}
-          </span>
-          <span style={{ fontSize: '1.5rem', color: 'rgba(255,255,255,0.4)', marginLeft: 8 }}>
-            {ampm}
-          </span>
-        </div>
-      </div>
-
       <div className="clock-date">{dateStr}</div>
     </div>
   )

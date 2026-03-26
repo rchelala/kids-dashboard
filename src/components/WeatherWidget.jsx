@@ -44,8 +44,10 @@ export default function WeatherWidget() {
 
   return (
     <div className="weather-widget">
-      <span className="weather-emoji">{weather.emoji}</span>
-      <span className="weather-temp">{weather.temp}°F</span>
+      <div className="weather-top">
+        <span className="weather-emoji">{weather.emoji}</span>
+        <span className="weather-temp">{weather.temp}°F</span>
+      </div>
       <span className="weather-label">{weather.label}</span>
     </div>
   )

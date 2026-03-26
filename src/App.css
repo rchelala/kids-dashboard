@@ -157,35 +157,65 @@ html, body, #root {
 
 .kiosk-layout {
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  gap: 10px;
+  grid-template-rows: auto 1fr auto;
+  gap: 14px;
   padding: 14px 16px;
   height: 100vh;
 }
 
-/* ── Top section: clock + weather side by side ────────────────────────────── */
-.top-section {
+/* ── Header card: clock | message | weather in one bar ───────────────────── */
+.header-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 14px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
 }
 
-/* ── Weather widget ───────────────────────────────────────────────────────── */
+/* ── Clock (left slot inside header-card) ────────────────────────────────── */
+.clock-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Motivational message (center slot) ──────────────────────────────────── */
+.motivational-message {
+  flex: 1;
+  text-align: center;
+  padding: 0 12px;
+}
+
+.motivational-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--teal);
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+}
+
+/* ── Weather widget (right slot) ─────────────────────────────────────────── */
 .weather-widget {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.weather-top {
+  display: flex;
   align-items: center;
-  gap: 10px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
-  padding: 10px 18px;
-  backdrop-filter: blur(10px);
-  white-space: nowrap;
+  gap: 8px;
 }
 
 .weather-emoji {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
 }
 
 .weather-temp {
@@ -195,23 +225,10 @@ html, body, #root {
 }
 
 .weather-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
   font-weight: 600;
-}
-
-/* ── Motivational message ─────────────────────────────────────────────────── */
-.motivational-message {
-  text-align: center;
-  padding: 6px 16px;
-}
-
-.motivational-text {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--teal);
-  letter-spacing: 0.02em;
-  opacity: 0.9;
+  text-align: right;
 }
 
 .middle-section {
@@ -255,17 +272,6 @@ html, body, #root {
 }
 
 /* ── Clock ────────────────────────────────────────────────────────────────── */
-.clock-card {
-  background: var(--card-bg);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius);
-  padding: 16px 28px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-}
 
 .clock-greeting {
   font-size: 1.4rem;
@@ -1113,29 +1119,33 @@ label.admin-label {
   .kiosk-layout {
     height: auto;
     min-height: 100vh;
-    grid-template-rows: auto auto auto auto;
+    grid-template-rows: auto auto auto;
     gap: 12px;
     padding: 12px;
   }
 
-  .top-section {
+  .header-card {
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+
+  .clock-left {
+    align-items: center;
+  }
+
+  .motivational-message {
+    padding: 0;
   }
 
   .weather-widget {
-    justify-content: center;
+    align-items: center;
   }
 
   .middle-section {
     grid-template-columns: 1fr;
-  }
-
-  .clock-card {
-    flex-direction: column;
-    text-align: center;
-    gap: 6px;
-    padding: 14px 16px;
   }
 
   .clock-time {

@@ -197,11 +197,11 @@ export default function App() {
       </button>
 
       <div className="kiosk-layout">
-        <div className="top-section">
+        <div className="header-card">
           <Clock childName={authCtx.kid.name} />
+          <MotivationalMessage message={settings?.dailyMessage} />
           <WeatherWidget />
         </div>
-        <MotivationalMessage message={settings?.dailyMessage} />
         <div className="middle-section">
           <div className="left-panel">
             <ChoreList
