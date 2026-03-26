@@ -8,7 +8,6 @@ import Celebration from './components/Celebration'
 import AdminPanel from './components/AdminPanel'
 import AuthFlow from './components/AuthFlow'
 import WeatherWidget from './components/WeatherWidget'
-import MotivationalMessage from './components/MotivationalMessage'
 
 const DAY_MAP = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
 
@@ -198,8 +197,7 @@ export default function App() {
 
       <div className="kiosk-layout">
         <div className="header-card">
-          <Clock childName={authCtx.kid.name} />
-          <MotivationalMessage message={settings?.dailyMessage} />
+          <Clock childName={authCtx.kid.name} message={settings?.dailyMessage} />
           <WeatherWidget />
         </div>
         <div className="middle-section">
