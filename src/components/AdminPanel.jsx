@@ -104,6 +104,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   const [newDeduction, setNewDeduction] = useState('')
   const [newAdminPin, setNewAdminPin] = useState('')
   const [newInviteCode, setNewInviteCode] = useState('')
+  const [newDailyMessage, setNewDailyMessage] = useState('')
   const [settingsSaved, setSettingsSaved] = useState(false)
 
   // ── Auth ────────────────────────────────────────────────────────────────────
@@ -290,6 +291,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     if (newDeduction) body.deductionPerMissedChore = Number(newDeduction)
     if (newAdminPin.trim()) body.adminPin = newAdminPin.trim()
     if (newInviteCode.trim()) body.inviteCode = newInviteCode.trim().toUpperCase()
+    if (newDailyMessage !== '') body.dailyMessage = newDailyMessage.trim()
     if (Object.keys(body).length === 0) return
     await authFetch('/api/admin/settings', {
       method: 'PUT',
@@ -298,7 +300,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     })
     setSettingsSaved(true)
     setTimeout(() => setSettingsSaved(false), 2000)
-    setNewName(''); setNewAllowance(''); setNewDeduction(''); setNewAdminPin(''); setNewInviteCode('')
+    setNewName(''); setNewAllowance(''); setNewDeduction(''); setNewAdminPin(''); setNewInviteCode(''); setNewDailyMessage('')
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -852,6 +854,20 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                   <div className="admin-input-group">
                     <label className="admin-label">New Invite Code (leave blank to keep current)</label>
                     <input className="admin-input" placeholder="e.g. RCFAMILY" value={newInviteCode} onChange={e => setNewInviteCode(e.target.value.toUpperCase())} />
+                  </div>
+
+                  <div className="admin-section-title" style={{ marginTop: 16 }}>Daily Message</div>
+                  <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>
+                    Show a custom message on the dashboard. Leave blank to use automatic daily quotes.
+                  </div>
+                  {settings?.dailyMessage && (
+                    <div style={{ background: 'rgba(78,205,196,0.1)', border: '1px solid rgba(78,205,196,0.3)', borderRadius: 12, padding: '10px 16px', marginBottom: 8, fontSize: '0.9rem', color: 'var(--teal)' }}>
+                      Current: "{settings.dailyMessage}"
+                    </div>
+                  )}
+                  <div className="admin-input-group">
+                    <label className="admin-label">New message (leave blank to clear and use auto-quotes)</label>
+                    <input className="admin-input" placeholder="e.g. Have an amazing day, champ! 🚀" value={newDailyMessage} onChange={e => setNewDailyMessage(e.target.value)} />
                   </div>
 
                   <div className="admin-section-title" style={{ marginTop: 16 }}>Settings Panel PIN</div>

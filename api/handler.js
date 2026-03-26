@@ -190,7 +190,7 @@ module.exports = async function handler(req, res) {
     if (method === 'GET' && path === 'settings') {
       const settings = await getSettings(kidId)
       const family = await getFamilyInfo(familyId)
-      return res.json({ ...settings, inviteCode: family?.inviteCode })
+      return res.json({ ...settings, inviteCode: family?.inviteCode, dailyMessage: family?.dailyMessage || '' })
     }
 
     // PUT /api/admin/settings
@@ -203,11 +203,12 @@ module.exports = async function handler(req, res) {
       if (req.body.icalUrl !== undefined) kidUpdates.icalUrl = req.body.icalUrl
       if (req.body.inviteCode !== undefined) familyUpdates.inviteCode = req.body.inviteCode
       if (req.body.adminPin !== undefined) familyUpdates.adminPin = req.body.adminPin
+      if (req.body.dailyMessage !== undefined) familyUpdates.dailyMessage = req.body.dailyMessage
       if (Object.keys(kidUpdates).length > 0) await updateSettings(kidId, kidUpdates)
       if (Object.keys(familyUpdates).length > 0) await updateFamilyInfo(familyId, familyUpdates)
       const updated = await getSettings(kidId)
       const family = await getFamilyInfo(familyId)
-      return res.json({ ...updated, inviteCode: family?.inviteCode })
+      return res.json({ ...updated, inviteCode: family?.inviteCode, dailyMessage: family?.dailyMessage || '' })
     }
 
     // GET /api/chores

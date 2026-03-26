@@ -53,14 +53,15 @@ async function updateSettings(kidId, updates) {
 // ── Family info ───────────────────────────────────────────────────────────────
 
 async function getFamilyInfo(familyId) {
-  const { data } = await supabase.from('families').select('invite_code, admin_pin').eq('id', familyId).single()
-  return data ? { inviteCode: data.invite_code, adminPin: data.admin_pin } : null
+  const { data } = await supabase.from('families').select('invite_code, admin_pin, daily_message').eq('id', familyId).single()
+  return data ? { inviteCode: data.invite_code, adminPin: data.admin_pin, dailyMessage: data.daily_message || '' } : null
 }
 
 async function updateFamilyInfo(familyId, updates) {
   const dbUpdates = {}
   if (updates.inviteCode !== undefined) dbUpdates.invite_code = updates.inviteCode
   if (updates.adminPin !== undefined) dbUpdates.admin_pin = updates.adminPin
+  if (updates.dailyMessage !== undefined) dbUpdates.daily_message = updates.dailyMessage
   await supabase.from('families').update(dbUpdates).eq('id', familyId)
 }
 
