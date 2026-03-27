@@ -15,7 +15,7 @@ export function playSound(soundType) {
     const ctx = new AudioContext()
     const fns = { rocket: playRocket, retro: playRetro, powerup: playPowerUp, sonar: playSonar, drumroll: playDrumRoll }
     const fn = fns[soundType] || playRetro
-    fn(ctx)
+    ctx.resume().then(() => fn(ctx))
   } catch (_) {}
 }
 
