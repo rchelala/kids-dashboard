@@ -1,11 +1,15 @@
 // Alarm sound options — all generated with Web Audio API, no files needed
 
 export const SOUND_OPTIONS = [
+  { id: 'beeper',   label: '📣 Loud Beeper' },
+  { id: 'siren',    label: '🚨 Siren' },
+  { id: 'buzzer',   label: '📯 Buzzer' },
+  { id: 'fanfare',  label: '🎺 Fanfare' },
   { id: 'rocket',   label: '🚀 Rocket Launch' },
   { id: 'retro',    label: '🎮 Retro Game' },
   { id: 'powerup',  label: '⚡ Power Up' },
   { id: 'sonar',    label: '🌊 Sonar Ping' },
-  { id: 'drumroll', label: '🥁 Drum Roll' }
+  { id: 'drumroll', label: '🥁 Drum Roll' },
 ]
 
 export function playSound(soundType) {
@@ -13,8 +17,18 @@ export function playSound(soundType) {
     const AudioContext = window.AudioContext || window.webkitAudioContext
     if (!AudioContext) return
     const ctx = new AudioContext()
-    const fns = { rocket: playRocket, retro: playRetro, powerup: playPowerUp, sonar: playSonar, drumroll: playDrumRoll }
-    const fn = fns[soundType] || playRetro
+    const fns = {
+      beeper: playBeeper,
+      siren: playSiren,
+      buzzer: playBuzzer,
+      fanfare: playFanfare,
+      rocket: playRocket,
+      retro: playRetro,
+      powerup: playPowerUp,
+      sonar: playSonar,
+      drumroll: playDrumRoll
+    }
+    const fn = fns[soundType] || playBeeper
     ctx.resume().then(() => fn(ctx))
   } catch (_) {}
 }
@@ -32,8 +46,78 @@ function note(ctx, freq, start, dur, type = 'sine', vol = 0.3) {
   osc.stop(start + dur + 0.05)
 }
 
+// ── New loud alarm sounds ──────────────────────────────────────────────────
+
+function playBeeper(ctx) {
+  // Classic loud alarm beep — 4 sharp blasts
+  for (let i = 0; i < 4; i++) {
+    const t = ctx.currentTime + i * 0.3
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.type = 'square'
+    osc.frequency.setValueAtTime(880, t)
+    gain.gain.setValueAtTime(0.8, t)
+    gain.gain.setValueAtTime(0.8, t + 0.18)
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22)
+    osc.start(t)
+    osc.stop(t + 0.25)
+  }
+}
+
+function playSiren(ctx) {
+  // Wailing up-down siren, 2 cycles
+  for (let i = 0; i < 2; i++) {
+    const t = ctx.currentTime + i * 0.9
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.type = 'sawtooth'
+    osc.frequency.setValueAtTime(400, t)
+    osc.frequency.linearRampToValueAtTime(900, t + 0.45)
+    osc.frequency.linearRampToValueAtTime(400, t + 0.9)
+    gain.gain.setValueAtTime(0.7, t)
+    gain.gain.setValueAtTime(0.7, t + 0.8)
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9)
+    osc.start(t)
+    osc.stop(t + 0.95)
+  }
+}
+
+function playBuzzer(ctx) {
+  // Harsh buzzer — 3 blasts
+  for (let i = 0; i < 3; i++) {
+    const t = ctx.currentTime + i * 0.35
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.type = 'sawtooth'
+    osc.frequency.setValueAtTime(150, t)
+    gain.gain.setValueAtTime(0.9, t)
+    gain.gain.setValueAtTime(0.9, t + 0.22)
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28)
+    osc.start(t)
+    osc.stop(t + 0.3)
+  }
+}
+
+function playFanfare(ctx) {
+  // Triumphant wake-up horn call
+  const melody = [523, 659, 784, 659, 784, 1047]
+  const durations = [0.12, 0.12, 0.12, 0.12, 0.12, 0.5]
+  let t = ctx.currentTime
+  melody.forEach((freq, i) => {
+    note(ctx, freq, t, durations[i], 'square', 0.7)
+    t += durations[i] + 0.02
+  })
+}
+
+// ── Original sounds ───────────────────────────────────────────────────────
+
 function playRocket(ctx) {
-  // Rising whoosh
   const osc = ctx.createOscillator()
   const gain = ctx.createGain()
   osc.connect(gain)
@@ -45,7 +129,6 @@ function playRocket(ctx) {
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2)
   osc.start(ctx.currentTime)
   osc.stop(ctx.currentTime + 1.25)
-  // Blast notes after whoosh
   ;[523, 659, 784, 1047].forEach((f, i) =>
     note(ctx, f, ctx.currentTime + 1.2 + i * 0.1, 0.3, 'sine', 0.4)
   )
@@ -81,7 +164,6 @@ function playSonar(ctx) {
 }
 
 function playDrumRoll(ctx) {
-  // Snare hits, accelerating
   for (let i = 0; i < 10; i++) {
     const t = ctx.currentTime + i * Math.max(0.04, 0.13 - i * 0.009)
     const bufSize = Math.floor(ctx.sampleRate * 0.08)
@@ -97,7 +179,6 @@ function playDrumRoll(ctx) {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08)
     src.start(t)
   }
-  // Cymbal crash
   note(ctx, 1200, ctx.currentTime + 0.85, 1.0, 'sine', 0.35)
   note(ctx, 1800, ctx.currentTime + 0.85, 0.8, 'sine', 0.2)
 }
