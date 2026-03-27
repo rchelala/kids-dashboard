@@ -1201,6 +1201,77 @@ label.admin-label {
   }
 }
 
+/* ── Compact layout for short screens (e.g. 1024×600 kiosk) ──────────────── */
+@media (max-height: 650px) {
+  .kiosk-layout {
+    gap: 6px;
+    padding: 6px 10px;
+  }
+
+  .header-card {
+    padding: 8px 20px;
+  }
+
+  .clock-greeting {
+    font-size: 1rem;
+  }
+
+  .clock-quote {
+    font-size: 0.78rem;
+  }
+
+  .clock-time {
+    font-size: 3rem;
+  }
+
+  .clock-time span:first-of-type {
+    font-size: 1.4rem;
+  }
+
+  .clock-date {
+    font-size: 0.85rem;
+  }
+
+  .weather-temp {
+    font-size: 1.2rem;
+  }
+
+  .weather-emoji {
+    font-size: 1.2rem;
+  }
+
+  .chore-item {
+    padding: 8px 12px;
+  }
+
+  .chore-emoji {
+    font-size: 1.3rem;
+  }
+
+  .chore-name {
+    font-size: 0.95rem;
+  }
+
+  .chore-check {
+    width: 24px;
+    height: 24px;
+    font-size: 0.8rem;
+  }
+
+  .chore-list {
+    gap: 6px;
+  }
+
+  .alarm-bar {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
+
+  .alarm-bar .alarm-icon {
+    font-size: 1rem;
+  }
+}
+
 /* ── History section */
 .history-grid {
   display: grid;
