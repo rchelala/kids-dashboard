@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import Clock from './components/Clock'
 import ChoreList from './components/ChoreList'
 import CalendarView from './components/CalendarView'
+import ChallengePanel from './components/ChallengePanel'
 import AlarmDisplay from './components/AlarmDisplay'
 import Celebration from './components/Celebration'
 import AdminPanel from './components/AdminPanel'
@@ -29,6 +30,8 @@ export default function App() {
   const [events, setEvents] = useState([])
   const [settings, setSettings] = useState(null)
   const [balance, setBalance] = useState(null)
+  const [challenges, setChallenges] = useState([])
+  const [rightTab, setRightTab] = useState('calendar')
   const [showAdmin, setShowAdmin] = useState(false)
   const [showCelebration, setShowCelebration] = useState(null)
   const [activeAlarm, setActiveAlarm] = useState(null)
@@ -56,21 +59,23 @@ export default function App() {
   const fetchData = useCallback(async () => {
     if (!authCtxRef.current) return
     try {
-      const [choresRes, alarmsRes, eventsRes, settingsRes, balanceRes] = await Promise.all([
+      const [choresRes, alarmsRes, eventsRes, settingsRes, balanceRes, challengesRes] = await Promise.all([
         authFetch('/api/chores'),
         authFetch('/api/alarms'),
         authFetch('/api/calendar'),
         authFetch('/api/settings'),
-        authFetch('/api/balance')
+        authFetch('/api/balance'),
+        authFetch('/api/challenges')
       ])
-      const [choresData, alarmsData, eventsData, settingsData, balanceData] = await Promise.all([
-        choresRes.json(), alarmsRes.json(), eventsRes.json(), settingsRes.json(), balanceRes.json()
+      const [choresData, alarmsData, eventsData, settingsData, balanceData, challengesData] = await Promise.all([
+        choresRes.json(), alarmsRes.json(), eventsRes.json(), settingsRes.json(), balanceRes.json(), challengesRes.json()
       ])
       setChores(choresData)
       setAlarms(alarmsData)
       setEvents(eventsData)
       setSettings(settingsData)
       setBalance(balanceData)
+      setChallenges(Array.isArray(challengesData) ? challengesData : [])
     } catch (err) {
       console.error('Failed to fetch data:', err)
     }
@@ -159,6 +164,14 @@ export default function App() {
     })
   }
 
+  const handleChallengeToggle = async (challengeId) => {
+    try {
+      const res = await authFetch(`/api/challenges/${challengeId}/complete`, { method: 'POST' })
+      const updated = await res.json()
+      setChallenges(Array.isArray(updated) ? updated : [])
+    } catch (err) { console.error(err) }
+  }
+
   const handleDismissAlarm = () => {
     if (activeAlarm) setDismissedAlarms(prev => new Set([...prev, activeAlarm.dismissKey]))
     setActiveAlarm(null)
@@ -211,7 +224,17 @@ export default function App() {
             />
           </div>
           <div className="right-panel">
-            <CalendarView events={events} />
+            <div className="right-panel-tabs">
+              <button className={`right-tab-btn ${rightTab === 'calendar' ? 'active' : ''}`} onClick={() => setRightTab('calendar')}>📅 Calendar</button>
+              <button className={`right-tab-btn ${rightTab === 'challenges' ? 'active' : ''}`} onClick={() => setRightTab('challenges')}>💪 Challenges</button>
+            </div>
+            {rightTab === 'calendar'
+              ? <CalendarView events={events} />
+              : <div className="card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <div className="card-title">💪 Challenges</div>
+                  <ChallengePanel challenges={challenges} onToggle={handleChallengeToggle} />
+                </div>
+            }
           </div>
         </div>
         <div className="bottom-section">
@@ -236,6 +259,7 @@ export default function App() {
           events={events}
           settings={settings}
           balance={balance}
+          challenges={challenges}
           kid={authCtx.kid}
           familyId={authCtx.familyId}
           authFetch={authFetch}

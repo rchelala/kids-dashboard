@@ -19,7 +19,9 @@ function formatDate(dateStr) {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function AdminPanel({ chores, alarms, events, settings, balance, kid, familyId, authFetch, onClose, onSwitchKid }) {
+const CHALLENGE_EMOJIS = ['💪', '🏃', '🤸', '🧘', '🚴', '🏋️', '⭐', '🔥', '🎯', '🏆', '🦁', '🚀', '🌟', '💥', '🎉']
+
+export default function AdminPanel({ chores, alarms, events, settings, balance, challenges, kid, familyId, authFetch, onClose, onSwitchKid }) {
   const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')
   const [pwError, setPwError] = useState('')
@@ -97,6 +99,34 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   const [spendNote, setSpendNote] = useState('')
   const [adjustAmount, setAdjustAmount] = useState('')
   const [adjustNote, setAdjustNote] = useState('')
+
+  // Challenges
+  const [localChallenges, setLocalChallenges] = useState(challenges || [])
+  const [newChallengeTitle, setNewChallengeTitle] = useState('')
+  const [newChallengeEmoji, setNewChallengeEmoji] = useState('💪')
+  const [newChallengeReward, setNewChallengeReward] = useState('')
+
+  async function addChallenge() {
+    if (!newChallengeTitle.trim()) return
+    const res = await authFetch('/api/admin/challenges', {
+      method: 'POST',
+      body: JSON.stringify({ title: newChallengeTitle.trim(), emoji: newChallengeEmoji, reward: newChallengeReward ? Number(newChallengeReward) : 0 })
+    })
+    setLocalChallenges(await res.json())
+    setNewChallengeTitle('')
+    setNewChallengeEmoji('💪')
+    setNewChallengeReward('')
+  }
+
+  async function deleteChallenge(id) {
+    const res = await authFetch(`/api/admin/challenges/${id}`, { method: 'DELETE' })
+    setLocalChallenges(await res.json())
+  }
+
+  async function resetChallenges() {
+    const res = await authFetch('/api/admin/challenges/reset', { method: 'POST' })
+    setLocalChallenges(await res.json())
+  }
 
   // Settings form
   const [newName, setNewName] = useState('')
@@ -333,13 +363,13 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
         ) : (
           <>
             <div className="admin-tabs">
-              {['chores', 'weekend', 'alarms', 'calendar', 'wallet', 'history', 'kids', 'settings'].map(t => (
+              {['chores', 'weekend', 'alarms', 'calendar', 'challenges', 'wallet', 'history', 'kids', 'settings'].map(t => (
                 <button
                   key={t}
                   className={`tab-btn ${tab === t ? 'active' : ''}`}
                   onClick={() => { setTab(t); if (t === 'kids') loadKids() }}
                 >
-                  {{ chores: '📋 Weekday', weekend: '🌟 Weekend', alarms: '⏰ Alarms', calendar: '📅 Calendar', wallet: '🐷 Wallet', history: '📊 History', kids: '👶 Kids', settings: '🔧 Settings' }[t]}
+                  {{ chores: '📋 Weekday', weekend: '🌟 Weekend', alarms: '⏰ Alarms', calendar: '📅 Calendar', challenges: '💪 Challenges', wallet: '🐷 Wallet', history: '📊 History', kids: '👶 Kids', settings: '🔧 Settings' }[t]}
                 </button>
               ))}
             </div>
@@ -639,6 +669,60 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                         </div>
                       ))}
                     </div>
+                  )}
+                </>
+              )}
+
+              {/* ── CHALLENGES ───────────────────────────────────────────── */}
+              {tab === 'challenges' && (
+                <>
+                  <div className="admin-section-title">Add Challenge</div>
+                  <div className="admin-form-row" style={{ alignItems: 'flex-start' }}>
+                    <div className="admin-input-group">
+                      <label className="admin-label">Challenge</label>
+                      <input
+                        className="admin-input"
+                        placeholder="e.g. Do 10 push-ups"
+                        value={newChallengeTitle}
+                        onChange={e => setNewChallengeTitle(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addChallenge()}
+                      />
+                    </div>
+                    <div className="admin-input-group" style={{ maxWidth: 100 }}>
+                      <label className="admin-label">Reward $</label>
+                      <input
+                        className="admin-input"
+                        placeholder="0.00"
+                        type="number"
+                        min="0"
+                        step="0.25"
+                        value={newChallengeReward}
+                        onChange={e => setNewChallengeReward(e.target.value)}
+                      />
+                    </div>
+                    <button className="admin-add-btn" onClick={addChallenge}>Add</button>
+                  </div>
+                  <div className="emoji-picker">
+                    {CHALLENGE_EMOJIS.map(e => (
+                      <button key={e} className={`emoji-btn ${newChallengeEmoji === e ? 'selected' : ''}`} onClick={() => setNewChallengeEmoji(e)}>{e}</button>
+                    ))}
+                  </div>
+
+                  <div className="admin-section-title" style={{ marginTop: 16 }}>Active Challenges</div>
+                  {localChallenges.length === 0 && <div className="admin-empty">No challenges yet</div>}
+                  {localChallenges.map(c => (
+                    <div key={c.id} className="admin-list-item">
+                      <span>{c.emoji} {c.title}{c.reward > 0 ? ` (+$${Number(c.reward).toFixed(2)})` : ''}</span>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        {c.completed && <span style={{ color: '#34D399', fontSize: '0.8rem' }}>✓ Done</span>}
+                        <button className="admin-delete-btn" onClick={() => deleteChallenge(c.id)}>✕</button>
+                      </div>
+                    </div>
+                  ))}
+                  {localChallenges.some(c => c.completed) && (
+                    <button className="admin-save-btn" style={{ marginTop: 12 }} onClick={resetChallenges}>
+                      Reset All Completed
+                    </button>
                   )}
                 </>
               )}

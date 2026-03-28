@@ -436,6 +436,51 @@ module.exports = async function handler(req, res) {
       return res.json(chores)
     }
 
+    // GET /api/challenges
+    if (method === 'GET' && path === 'challenges') {
+      const { data } = await supabase.from('challenges').select('*').eq('kid_id', kidId).order('created_at')
+      return res.json(data || [])
+    }
+
+    // POST /api/admin/challenges
+    if (method === 'POST' && path === 'admin/challenges') {
+      const { title, emoji, reward } = req.body
+      if (!title) return res.status(400).json({ error: 'Title required' })
+      await supabase.from('challenges').insert({
+        id: `ch${Date.now()}`,
+        kid_id: kidId,
+        title,
+        emoji: emoji || '💪',
+        reward: reward || 0,
+        completed: false
+      })
+      const { data } = await supabase.from('challenges').select('*').eq('kid_id', kidId).order('created_at')
+      return res.json(data || [])
+    }
+
+    // DELETE /api/admin/challenges/:id
+    if (method === 'DELETE' && slug[0] === 'admin' && slug[1] === 'challenges' && slug[2]) {
+      await supabase.from('challenges').delete().eq('id', slug[2]).eq('kid_id', kidId)
+      const { data } = await supabase.from('challenges').select('*').eq('kid_id', kidId).order('created_at')
+      return res.json(data || [])
+    }
+
+    // POST /api/admin/challenges/reset — uncheck all completed
+    if (method === 'POST' && path === 'admin/challenges/reset') {
+      await supabase.from('challenges').update({ completed: false }).eq('kid_id', kidId)
+      const { data } = await supabase.from('challenges').select('*').eq('kid_id', kidId).order('created_at')
+      return res.json(data || [])
+    }
+
+    // POST /api/challenges/:id/complete — toggle complete
+    if (method === 'POST' && slug[0] === 'challenges' && slug[2] === 'complete') {
+      const { data: existing } = await supabase.from('challenges').select('completed').eq('id', slug[1]).eq('kid_id', kidId).single()
+      if (!existing) return res.status(404).json({ error: 'Not found' })
+      await supabase.from('challenges').update({ completed: !existing.completed }).eq('id', slug[1])
+      const { data } = await supabase.from('challenges').select('*').eq('kid_id', kidId).order('created_at')
+      return res.json(data || [])
+    }
+
     res.status(404).json({ error: 'Not found' })
 
   } catch (err) {
