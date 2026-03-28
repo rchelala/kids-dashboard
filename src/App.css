@@ -235,10 +235,16 @@ html, body, #root {
   min-height: 0;
 }
 
-.left-panel,
-.right-panel {
+.left-panel {
   min-height: 0;
   overflow: hidden;
+}
+
+.right-panel {
+  min-height: 0;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Cards ────────────────────────────────────────────────────────────────── */
@@ -379,12 +385,6 @@ html, body, #root {
 }
 
 /* ── Right panel tabs ─────────────────────────────────────────────────────── */
-.right-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
 .right-panel-tabs {
   display: flex;
   gap: 6px;
