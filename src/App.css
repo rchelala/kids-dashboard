@@ -385,6 +385,12 @@ html, body, #root {
 }
 
 /* ── Right panel tabs ─────────────────────────────────────────────────────── */
+.right-panel-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .right-panel-tabs {
   display: flex;
   gap: 6px;

@@ -228,13 +228,15 @@ export default function App() {
               <button className={`right-tab-btn ${rightTab === 'calendar' ? 'active' : ''}`} onClick={() => setRightTab('calendar')}>📅 Calendar</button>
               <button className={`right-tab-btn ${rightTab === 'challenges' ? 'active' : ''}`} onClick={() => setRightTab('challenges')}>💪 Challenges</button>
             </div>
-            {rightTab === 'calendar'
-              ? <CalendarView events={events} />
-              : <div className="card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <div className="card-title">💪 Challenges</div>
-                  <ChallengePanel challenges={challenges} onToggle={handleChallengeToggle} />
-                </div>
-            }
+            <div className="right-panel-content">
+              {rightTab === 'calendar'
+                ? <CalendarView events={events} />
+                : <div className="card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <div className="card-title">💪 Challenges</div>
+                    <ChallengePanel challenges={challenges} onToggle={handleChallengeToggle} />
+                  </div>
+              }
+            </div>
           </div>
         </div>
         <div className="bottom-section">
