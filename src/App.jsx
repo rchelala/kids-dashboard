@@ -3,7 +3,6 @@ import { supabase } from './lib/supabase'
 import Clock from './components/Clock'
 import ChoreList from './components/ChoreList'
 import CalendarView from './components/CalendarView'
-import ChallengePanel from './components/ChallengePanel'
 import AlarmDisplay from './components/AlarmDisplay'
 import Celebration from './components/Celebration'
 import AdminPanel from './components/AdminPanel'
@@ -31,7 +30,6 @@ export default function App() {
   const [settings, setSettings] = useState(null)
   const [balance, setBalance] = useState(null)
   const [challenges, setChallenges] = useState([])
-  const [rightTab, setRightTab] = useState('calendar')
   const [showAdmin, setShowAdmin] = useState(false)
   const [showCelebration, setShowCelebration] = useState(null)
   const [activeAlarm, setActiveAlarm] = useState(null)
@@ -224,19 +222,7 @@ export default function App() {
             />
           </div>
           <div className="right-panel">
-            <div className="right-panel-tabs">
-              <button className={`right-tab-btn ${rightTab === 'calendar' ? 'active' : ''}`} onClick={() => setRightTab('calendar')}>📅 Calendar</button>
-              <button className={`right-tab-btn ${rightTab === 'challenges' ? 'active' : ''}`} onClick={() => setRightTab('challenges')}>💪 Challenges</button>
-            </div>
-            <div className="right-panel-content">
-              {rightTab === 'calendar'
-                ? <CalendarView events={events} />
-                : <div className="card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <div className="card-title">💪 Challenges</div>
-                    <ChallengePanel challenges={challenges} onToggle={handleChallengeToggle} />
-                  </div>
-              }
-            </div>
+            <CalendarView events={events} challenges={challenges} onChallengeToggle={handleChallengeToggle} />
           </div>
         </div>
         <div className="bottom-section">
