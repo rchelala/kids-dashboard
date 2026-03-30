@@ -966,26 +966,23 @@ html, body, #root {
 .pw-submit-btn:hover { transform: scale(1.04); }
 
 /* Tabs */
-.admin-tabs::-webkit-scrollbar { display: none; }
 .admin-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
-  padding: 12px 16px;
+  padding: 10px 16px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
   flex-shrink: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
 }
 .tab-btn {
   background: none;
   border: 1px solid transparent;
   border-radius: 10px;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 700;
   font-family: var(--font);
-  padding: 8px 16px;
+  padding: 6px 12px;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
