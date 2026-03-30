@@ -898,6 +898,18 @@ html, body, #root {
   color: var(--gold);
 }
 
+.admin-kid-select {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
 .admin-close-btn {
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);

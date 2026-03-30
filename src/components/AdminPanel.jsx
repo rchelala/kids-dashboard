@@ -27,6 +27,37 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   const [pwError, setPwError] = useState('')
   const [tab, setTab] = useState('chores')
 
+  // Kid selector — manage any kid's data from within the panel
+  const [allKids, setAllKids] = useState([kid])
+  const [managingKidId, setManagingKidId] = useState(kid.id)
+
+  // Wrap authFetch to always use the currently managed kid
+  const adminFetch = (url, options = {}) => {
+    const headers = { ...(options.headers || {}), 'x-kid-id': managingKidId }
+    return authFetch(url, { ...options, headers })
+  }
+
+  // Load all kids once authed, and reload kid data when managingKidId changes
+  useEffect(() => {
+    if (!authed) return
+    authFetch('/api/families/kids').then(r => r.json()).then(setAllKids)
+  }, [authed])
+
+  useEffect(() => {
+    if (!authed) return
+    Promise.all([
+      adminFetch('/api/chores').then(r => r.json()),
+      adminFetch('/api/alarms').then(r => r.json()),
+      adminFetch('/api/balance').then(r => r.json()),
+      adminFetch('/api/challenges').then(r => r.json()),
+    ]).then(([c, a, b, ch]) => {
+      setLocalChores(c)
+      setLocalAlarms(a)
+      setLocalBalance(b)
+      setLocalChallenges(Array.isArray(ch) ? ch : [])
+    })
+  }, [managingKidId, authed])
+
   // Local state mirrors
   const [localChores, setLocalChores] = useState(chores)
   const [localAlarms, setLocalAlarms] = useState(alarms)
@@ -108,7 +139,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
 
   async function addChallenge() {
     if (!newChallengeTitle.trim()) return
-    const res = await authFetch('/api/admin/challenges', {
+    const res = await adminFetch('/api/admin/challenges', {
       method: 'POST',
       body: JSON.stringify({ title: newChallengeTitle.trim(), emoji: newChallengeEmoji, reward: newChallengeReward ? Number(newChallengeReward) : 0 })
     })
@@ -119,12 +150,12 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function deleteChallenge(id) {
-    const res = await authFetch(`/api/admin/challenges/${id}`, { method: 'DELETE' })
+    const res = await adminFetch(`/api/admin/challenges/${id}`, { method: 'DELETE' })
     setLocalChallenges(await res.json())
   }
 
   async function resetChallenges() {
-    const res = await authFetch('/api/admin/challenges/reset', { method: 'POST' })
+    const res = await adminFetch('/api/admin/challenges/reset', { method: 'POST' })
     setLocalChallenges(await res.json())
   }
 
@@ -154,7 +185,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
 
   async function addWeekdayChore() {
     if (!newWdName.trim()) return
-    const res = await authFetch('/api/admin/chores/weekday', {
+    const res = await adminFetch('/api/admin/chores/weekday', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newWdName.trim(), emoji: newWdEmoji })
@@ -165,7 +196,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function deleteWeekdayChore(id) {
-    const res = await authFetch(`/api/admin/chores/weekday/${id}`, { method: 'DELETE' })
+    const res = await adminFetch(`/api/admin/chores/weekday/${id}`, { method: 'DELETE' })
     setLocalChores(await res.json())
   }
 
@@ -173,7 +204,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
 
   async function addToPool() {
     if (!newWeName.trim()) return
-    const res = await authFetch('/api/admin/chores/weekend/pool', {
+    const res = await adminFetch('/api/admin/chores/weekend/pool', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newWeName.trim(), emoji: newWeEmoji })
@@ -185,7 +216,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function removeFromPool(id) {
-    const res = await authFetch(`/api/admin/chores/weekend/pool/${id}`, { method: 'DELETE' })
+    const res = await adminFetch(`/api/admin/chores/weekend/pool/${id}`, { method: 'DELETE' })
     setLocalChores(await res.json())
     setPendingActive(null)
   }
@@ -198,7 +229,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function saveWeekendActivation() {
-    const res = await authFetch('/api/admin/chores/weekend/activate', {
+    const res = await adminFetch('/api/admin/chores/weekend/activate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ active: activeWeekend })
@@ -209,7 +240,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
 
   async function addCustomWeekendChore() {
     if (!customChoreName.trim()) return
-    const res = await authFetch('/api/admin/chores/weekend/custom', {
+    const res = await adminFetch('/api/admin/chores/weekend/custom', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: customChoreName.trim(), emoji: customChoreEmoji })
@@ -221,7 +252,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function resetWeek() {
-    const res = await authFetch('/api/admin/chores/reset', { method: 'POST' })
+    const res = await adminFetch('/api/admin/chores/reset', { method: 'POST' })
     setLocalChores(await res.json())
   }
 
@@ -229,7 +260,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
 
   async function addAlarm() {
     if (!newAlarmTime || newAlarmDays.length === 0) return
-    const res = await authFetch('/api/admin/alarms', {
+    const res = await adminFetch('/api/admin/alarms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ time: newAlarmTime, label: newAlarmLabel, days: newAlarmDays, sound: newAlarmSound })
@@ -240,7 +271,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function toggleAlarm(alarm) {
-    const res = await authFetch(`/api/admin/alarms/${alarm.id}`, {
+    const res = await adminFetch(`/api/admin/alarms/${alarm.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled: !alarm.enabled })
@@ -249,7 +280,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function deleteAlarm(id) {
-    const res = await authFetch(`/api/admin/alarms/${id}`, { method: 'DELETE' })
+    const res = await adminFetch(`/api/admin/alarms/${id}`, { method: 'DELETE' })
     setLocalAlarms(await res.json())
   }
 
@@ -277,7 +308,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   }
 
   async function saveIcalUrl() {
-    await authFetch('/api/admin/settings', {
+    await adminFetch('/api/admin/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ icalUrl: icalInput.trim() || null })
@@ -291,7 +322,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   async function logSpend() {
     const amt = parseFloat(spendAmount)
     if (isNaN(amt) || amt <= 0) return
-    const res = await authFetch('/api/admin/balance/spend', {
+    const res = await adminFetch('/api/admin/balance/spend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount: amt, note: spendNote.trim() || 'Purchase' })
@@ -303,7 +334,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   async function adjustBalance() {
     const amt = parseFloat(adjustAmount)
     if (isNaN(amt)) return
-    const res = await authFetch('/api/admin/balance/adjust', {
+    const res = await adminFetch('/api/admin/balance/adjust', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount: amt, note: adjustNote.trim() || 'Manual adjustment' })
@@ -323,7 +354,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     if (newInviteCode.trim()) body.inviteCode = newInviteCode.trim().toUpperCase()
     if (newDailyMessage !== '') body.dailyMessage = newDailyMessage.trim()
     if (Object.keys(body).length === 0) return
-    await authFetch('/api/admin/settings', {
+    await adminFetch('/api/admin/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -342,6 +373,17 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
       <div className="admin-modal">
         <div className="admin-header">
           <span className="admin-title">⚙️ Parent Settings</span>
+          {authed && allKids.length > 1 && (
+            <select
+              className="admin-kid-select"
+              value={managingKidId}
+              onChange={e => setManagingKidId(e.target.value)}
+            >
+              {allKids.map(k => (
+                <option key={k.id} value={k.id}>{k.emoji} {k.name}</option>
+              ))}
+            </select>
+          )}
           <button className="admin-close-btn" onClick={onClose}>✕</button>
         </div>
 
