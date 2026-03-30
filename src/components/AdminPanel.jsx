@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SOUND_OPTIONS, playSound } from '../utils/sounds'
 
 const CHORE_EMOJIS = ['🛏️', '💩', '🐾', '🧹', '🍽️', '🐕', '🐈', '🌿', '🚿', '👕', '📚', '🗑️', '🧺', '✅', '🚗', '🪴', '🪣', '🧽']
