@@ -41,6 +41,16 @@ function formatAlarmTime(timeStr) {
   return `${hour}:${String(m).padStart(2, '0')} ${ampm}`
 }
 
+function getDismissLabel(label = '') {
+  const l = label.toLowerCase()
+  if (l.includes('breakfast') || l.includes('lunch') || l.includes('dinner') || l.includes('snack') || l.includes('eat')) return "On My Way! 🍽️"
+  if (l.includes('school') || l.includes('bus') || l.includes('time to go')) return "Ready! 🎒"
+  if (l.includes('bed') || l.includes('sleep')) return "Good Night! 🌙"
+  if (l.includes('shower') || l.includes('bath')) return "Got It! 🚿"
+  if (l.includes('homework') || l.includes('study')) return "On It! 📚"
+  return "I'm Awake! 🙌"
+}
+
 export default function AlarmDisplay({ alarms, activeAlarm, onDismiss }) {
   const [tick, setTick] = useState(0)
   const soundInterval = useRef(null)
@@ -71,7 +81,7 @@ export default function AlarmDisplay({ alarms, activeAlarm, onDismiss }) {
           <div className="alarm-modal-icon">⏰</div>
           <div className="alarm-modal-time">{formatAlarmTime(activeAlarm.time)}</div>
           <div className="alarm-modal-label">{activeAlarm.label}</div>
-          <button className="alarm-dismiss-btn" onClick={onDismiss}>I'm Awake! 🙌</button>
+          <button className="alarm-dismiss-btn" onClick={onDismiss}>{getDismissLabel(activeAlarm.label)}</button>
         </div>
       </div>
     )
