@@ -68,8 +68,20 @@ async function updateFamilyInfo(familyId, updates) {
 // ── Chores ────────────────────────────────────────────────────────────────────
 
 async function getChoresRaw(kidId) {
-  const { data } = await supabase.from('chores').select('*').eq('kid_id', kidId).single()
-  if (!data) return null
+  let { data } = await supabase.from('chores').select('*').eq('kid_id', kidId).single()
+  if (!data) {
+    // Auto-seed missing chores row
+    const inserted = await supabase.from('chores').insert({
+      kid_id: kidId,
+      current_week: getMondayKey(),
+      weekday: { items: [], completions: {} },
+      weekend: { pool: [], active: [], completions: {} },
+      celebration_shown: {},
+      weekend_celebration_shown: false,
+      history: []
+    }).select().single()
+    data = inserted.data
+  }
   return {
     currentWeek: data.current_week,
     weekday: data.weekday,

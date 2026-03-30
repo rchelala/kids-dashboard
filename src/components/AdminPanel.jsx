@@ -37,14 +37,15 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     return authFetch(url, { ...options, headers })
   }
 
-  // Load all kids once authed, and reload kid data when managingKidId changes
+  // Load all kids once authed
   useEffect(() => {
     if (!authed) return
     authFetch('/api/families/kids').then(r => r.json()).then(setAllKids)
   }, [authed])
 
+  // Reload kid-specific data only when switching to a different kid
   useEffect(() => {
-    if (!authed) return
+    if (!authed || managingKidId === kid.id) return
     Promise.all([
       adminFetch('/api/chores').then(r => r.json()),
       adminFetch('/api/alarms').then(r => r.json()),
@@ -55,7 +56,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
       setLocalAlarms(a)
       setLocalBalance(b)
       setLocalChallenges(Array.isArray(ch) ? ch : [])
-    })
+    }).catch(console.error)
   }, [managingKidId, authed])
 
   // Local state mirrors
