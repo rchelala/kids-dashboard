@@ -49,7 +49,7 @@ export default function App() {
       ...(options.headers || {})
     }
     if (session) headers['Authorization'] = `Bearer ${session.access_token}`
-    if (ctx?.kid) headers['x-kid-id'] = ctx.kid.id
+    if (ctx?.kid && !headers['x-kid-id']) headers['x-kid-id'] = ctx.kid.id
     if (ctx?.familyId) headers['x-family-id'] = ctx.familyId
     return fetch(url, { ...options, headers })
   }, [])
