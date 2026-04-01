@@ -19,10 +19,12 @@ export default function ChoreList({ chores, settings, balance, onWeekdayToggle, 
   const weekendCompletions = chores.weekend?.completions || {}
   const activeWeekendChores = weekendPool.filter(c => activeWeekend.includes(c.id))
 
-  const totalPossible = earnings.totalPossible || 0
-  const totalActual = earnings.totalActual || 0
-  const pct = totalPossible > 0 ? Math.round((totalActual / totalPossible) * 100) : 0
   const projected = earnings.earnings ?? settings?.allowanceAmount ?? 3
+
+  // Daily progress (weekday) — only today's completions vs today's chore list
+  const todayDone = weekendDay ? (earnings.weekendStats?.actual ?? 0) : todayCompletions.length
+  const todayTotal = weekendDay ? (earnings.weekendStats?.possible ?? 0) : weekdayItems.length
+  const pct = todayTotal > 0 ? Math.round((todayDone / todayTotal) * 100) : 0
 
   return (
     <div className="card card-gold" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -85,13 +87,8 @@ export default function ChoreList({ chores, settings, balance, onWeekdayToggle, 
       <div className="chore-progress" style={{ marginTop: 'auto' }}>
         <div className="progress-stats">
           <span>
-            Weekday: {earnings.weekdayStats?.actual ?? 0}/{earnings.weekdayStats?.possible ?? 0}
+            {weekendDay ? 'Weekend' : 'Today'}: {todayDone}/{todayTotal}
           </span>
-          {(earnings.weekendStats?.possible ?? 0) > 0 && (
-            <span>
-              Weekend: {earnings.weekendStats.actual}/{earnings.weekendStats.possible}
-            </span>
-          )}
         </div>
         <div className="progress-bar-bg">
           <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
