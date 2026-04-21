@@ -71,7 +71,9 @@ async function updateFamilyInfo(familyId, updates) {
 // ── Chores ────────────────────────────────────────────────────────────────────
 
 async function getChoresRaw(kidId) {
-  let { data } = await supabase.from('chores').select('*').eq('kid_id', kidId).single()
+  // Use select() without .single() so multiple duplicate rows don't cause a failure
+  const { data: rows } = await supabase.from('chores').select('*').eq('kid_id', kidId)
+  let data = rows?.[0] || null
   if (!data) {
     // Auto-seed missing chores row
     const { data: seeded, error: seedError } = await supabase.from('chores').insert({
