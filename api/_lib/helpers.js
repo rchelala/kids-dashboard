@@ -74,7 +74,7 @@ async function getChoresRaw(kidId) {
   let { data } = await supabase.from('chores').select('*').eq('kid_id', kidId).single()
   if (!data) {
     // Auto-seed missing chores row
-    const inserted = await supabase.from('chores').insert({
+    const { data: seeded } = await supabase.from('chores').upsert({
       kid_id: kidId,
       current_week: getMondayKey(),
       weekday: { items: [], completions: {} },
@@ -82,8 +82,8 @@ async function getChoresRaw(kidId) {
       celebration_shown: {},
       weekend_celebration_shown: false,
       history: []
-    }).select().single()
-    data = inserted.data
+    }, { onConflict: 'kid_id' }).select().single()
+    data = seeded
   }
   return {
     currentWeek: data.current_week,
@@ -96,14 +96,16 @@ async function getChoresRaw(kidId) {
 }
 
 async function writeChores(chores, kidId) {
-  await supabase.from('chores').update({
+  const { error } = await supabase.from('chores').upsert({
+    kid_id: kidId,
     current_week: chores.currentWeek,
     weekday: chores.weekday,
     weekend: chores.weekend,
     celebration_shown: chores.celebrationShown,
     weekend_celebration_shown: chores.weekendCelebrationShown,
     history: chores.history
-  }).eq('kid_id', kidId)
+  }, { onConflict: 'kid_id' })
+  if (error) throw error
 }
 
 // ── Earnings ──────────────────────────────────────────────────────────────────
