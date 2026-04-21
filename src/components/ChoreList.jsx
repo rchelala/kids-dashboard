@@ -95,7 +95,7 @@ export default function ChoreList({ chores, settings, balance, onWeekdayToggle, 
         </div>
         <div className="allowance-badge">
           💰 On track: ${projected.toFixed(2)} / ${(settings?.allowanceAmount ?? 3).toFixed(2)}
-          {projected >= (settings?.allowanceAmount ?? 3) && totalPossible > 0 && ' 🎉'}
+          {projected >= (settings?.allowanceAmount ?? 3) && earnings.totalPossible > 0 && ' 🎉'}
         </div>
         {balance != null && (
           <div className="savings-badge">

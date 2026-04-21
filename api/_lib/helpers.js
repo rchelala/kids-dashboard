@@ -5,18 +5,21 @@ try { ical = require('node-ical') } catch (_) {}
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
+// Arizona is UTC-7 year-round (no daylight saving time)
+function getArizonaDate() {
+  return new Date(Date.now() - 7 * 60 * 60 * 1000)
+}
+
 function getMondayKey() {
-  const now = new Date()
-  const day = now.getDay()
+  const now = getArizonaDate()
+  const day = now.getUTCDay()
   const diff = day === 0 ? -6 : 1 - day
-  const monday = new Date(now)
-  monday.setDate(now.getDate() + diff)
-  monday.setHours(0, 0, 0, 0)
-  return monday.toISOString().split('T')[0]
+  now.setUTCDate(now.getUTCDate() + diff)
+  return now.toISOString().split('T')[0]
 }
 
 function getTodayKey() {
-  return new Date().toISOString().split('T')[0]
+  return getArizonaDate().toISOString().split('T')[0]
 }
 
 // ── Settings (from kids table) ────────────────────────────────────────────────
