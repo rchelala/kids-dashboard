@@ -368,7 +368,7 @@ module.exports = async function handler(req, res) {
       const chores = await getChoresRaw(kidId)
       chores.weekday.items.push({ id: `wd${Date.now()}`, name: req.body.name, emoji: req.body.emoji || '✅' })
       await writeChores(chores, kidId)
-      return res.json(chores)
+      return res.json(await getChoresRaw(kidId))
     }
 
     // DELETE /api/admin/chores/weekday/:id
@@ -376,7 +376,7 @@ module.exports = async function handler(req, res) {
       const chores = await getChoresRaw(kidId)
       chores.weekday.items = chores.weekday.items.filter(c => c.id !== slug[3])
       await writeChores(chores, kidId)
-      return res.json(chores)
+      return res.json(await getChoresRaw(kidId))
     }
 
     // POST /api/admin/chores/reset
@@ -388,7 +388,7 @@ module.exports = async function handler(req, res) {
       chores.celebrationShown = {}
       chores.weekendCelebrationShown = false
       await writeChores(chores, kidId)
-      return res.json(chores)
+      return res.json(await getChoresRaw(kidId))
     }
 
     // POST /api/admin/chores/weekend/pool
@@ -396,7 +396,7 @@ module.exports = async function handler(req, res) {
       const chores = await getChoresRaw(kidId)
       chores.weekend.pool.push({ id: `we${Date.now()}`, name: req.body.name, emoji: req.body.emoji || '✅' })
       await writeChores(chores, kidId)
-      return res.json(chores)
+      return res.json(await getChoresRaw(kidId))
     }
 
     // DELETE /api/admin/chores/weekend/pool/:id
@@ -407,7 +407,7 @@ module.exports = async function handler(req, res) {
       chores.weekend.active = chores.weekend.active.filter(a => a !== id)
       if (chores.weekend.completions) delete chores.weekend.completions[id]
       await writeChores(chores, kidId)
-      return res.json(chores)
+      return res.json(await getChoresRaw(kidId))
     }
 
     // POST /api/admin/chores/weekend/activate
@@ -421,7 +421,7 @@ module.exports = async function handler(req, res) {
       chores.weekend.completions = newCompletions
       chores.weekendCelebrationShown = false
       await writeChores(chores, kidId)
-      return res.json(chores)
+      return res.json(await getChoresRaw(kidId))
     }
 
     // POST /api/admin/chores/weekend/custom
@@ -433,7 +433,7 @@ module.exports = async function handler(req, res) {
       chores.weekend.completions[newChore.id] = false
       chores.weekendCelebrationShown = false
       await writeChores(chores, kidId)
-      return res.json(chores)
+      return res.json(await getChoresRaw(kidId))
     }
 
     // GET /api/challenges

@@ -74,7 +74,7 @@ async function getChoresRaw(kidId) {
   let { data } = await supabase.from('chores').select('*').eq('kid_id', kidId).single()
   if (!data) {
     // Auto-seed missing chores row
-    const { data: seeded } = await supabase.from('chores').upsert({
+    const { data: seeded, error: seedError } = await supabase.from('chores').insert({
       kid_id: kidId,
       current_week: getMondayKey(),
       weekday: { items: [], completions: {} },
@@ -82,7 +82,8 @@ async function getChoresRaw(kidId) {
       celebration_shown: {},
       weekend_celebration_shown: false,
       history: []
-    }, { onConflict: 'kid_id' }).select().single()
+    }).select().single()
+    if (seedError) throw seedError
     data = seeded
   }
   return {
@@ -96,16 +97,20 @@ async function getChoresRaw(kidId) {
 }
 
 async function writeChores(chores, kidId) {
-  const { error } = await supabase.from('chores').upsert({
-    kid_id: kidId,
+  const payload = {
     current_week: chores.currentWeek,
     weekday: chores.weekday,
     weekend: chores.weekend,
     celebration_shown: chores.celebrationShown,
     weekend_celebration_shown: chores.weekendCelebrationShown,
     history: chores.history
-  }, { onConflict: 'kid_id' })
+  }
+  const { data: rows, error } = await supabase.from('chores').update(payload).eq('kid_id', kidId).select('kid_id')
   if (error) throw error
+  if (!rows || rows.length === 0) {
+    const { error: ie } = await supabase.from('chores').insert({ kid_id: kidId, ...payload })
+    if (ie) throw ie
+  }
 }
 
 // ── Earnings ──────────────────────────────────────────────────────────────────

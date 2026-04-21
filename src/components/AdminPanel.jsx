@@ -191,7 +191,9 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newWdName.trim(), emoji: newWdEmoji })
     })
-    setLocalChores(await res.json())
+    const data = await res.json()
+    if (!res.ok) { alert('Error saving chore: ' + (data?.error || res.status)); return }
+    setLocalChores(data)
     setNewWdName('')
     setNewWdEmoji('✅')
   }
