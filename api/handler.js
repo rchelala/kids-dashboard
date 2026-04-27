@@ -201,6 +201,7 @@ module.exports = async function handler(req, res) {
       if (req.body.allowanceAmount !== undefined) kidUpdates.allowanceAmount = Number(req.body.allowanceAmount)
       if (req.body.deductionPerMissedChore !== undefined) kidUpdates.deductionPerMissedChore = Number(req.body.deductionPerMissedChore)
       if (req.body.icalUrl !== undefined) kidUpdates.icalUrl = req.body.icalUrl
+      if (req.body.rewardDescription !== undefined) kidUpdates.rewardDescription = req.body.rewardDescription
       if (req.body.inviteCode !== undefined) familyUpdates.inviteCode = req.body.inviteCode
       if (req.body.adminPin !== undefined) familyUpdates.adminPin = req.body.adminPin
       if (req.body.dailyMessage !== undefined) familyUpdates.dailyMessage = req.body.dailyMessage

@@ -32,7 +32,8 @@ async function getSettings(kidId) {
     kidEmoji: data.emoji,
     allowanceAmount: Number(data.allowance_amount),
     deductionPerMissedChore: Number(data.deduction_per_missed_chore),
-    icalUrl: data.ical_url
+    icalUrl: data.ical_url,
+    rewardDescription: data.reward_description || ''
   }
 }
 
@@ -42,6 +43,7 @@ async function updateSettings(kidId, updates) {
   if (updates.allowanceAmount !== undefined) dbUpdates.allowance_amount = updates.allowanceAmount
   if (updates.deductionPerMissedChore !== undefined) dbUpdates.deduction_per_missed_chore = updates.deductionPerMissedChore
   if (updates.icalUrl !== undefined) dbUpdates.ical_url = updates.icalUrl
+  if (updates.rewardDescription !== undefined) dbUpdates.reward_description = updates.rewardDescription
   const { data } = await supabase.from('kids').update(dbUpdates).eq('id', kidId).select().single()
   if (!data) return null
   return {
@@ -49,7 +51,8 @@ async function updateSettings(kidId, updates) {
     kidEmoji: data.emoji,
     allowanceAmount: Number(data.allowance_amount),
     deductionPerMissedChore: Number(data.deduction_per_missed_chore),
-    icalUrl: data.ical_url
+    icalUrl: data.ical_url,
+    rewardDescription: data.reward_description || ''
   }
 }
 
@@ -126,8 +129,7 @@ function calculateEarnings(chores, settings) {
 
   const elapsedWeekdays = []
   for (let d = new Date(weekStart); d <= today; d.setDate(d.getDate() + 1)) {
-    const dow = d.getDay()
-    if (dow >= 1 && dow <= 5) elapsedWeekdays.push(d.toISOString().split('T')[0])
+    elapsedWeekdays.push(d.toISOString().split('T')[0])
   }
 
   const weekdayItems = chores.weekday.items
@@ -167,23 +169,6 @@ async function checkAndResetChores(kidId) {
     if (!chores.history) chores.history = []
     chores.history.push({ week: chores.currentWeek, ...lastEarnings, archivedAt: new Date().toISOString() })
     if (chores.history.length > 10) chores.history = chores.history.slice(-10)
-
-    if (chores.currentWeek !== '2000-01-01' && lastEarnings.earnings > 0) {
-      const { data: balData } = await supabase.from('balance').select('*').eq('kid_id', kidId).single()
-      if (balData) {
-        const newBal = Math.round((Number(balData.balance) + lastEarnings.earnings) * 100) / 100
-        const txs = [...(balData.transactions || [])]
-        txs.push({
-          id: `tx${Date.now()}`,
-          type: 'earn',
-          amount: lastEarnings.earnings,
-          note: `Week of ${chores.currentWeek}`,
-          date: new Date().toISOString().split('T')[0]
-        })
-        if (txs.length > 50) txs.splice(0, txs.length - 50)
-        await supabase.from('balance').update({ balance: newBal, transactions: txs }).eq('kid_id', kidId)
-      }
-    }
 
     chores.weekday = { ...chores.weekday, completions: {} }
     chores.weekend = { ...chores.weekend, active: [], completions: {} }

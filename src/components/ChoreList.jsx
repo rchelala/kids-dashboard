@@ -21,39 +21,37 @@ export default function ChoreList({ chores, settings, balance, onWeekdayToggle, 
 
   const projected = earnings.earnings ?? settings?.allowanceAmount ?? 3
 
-  // Daily progress (weekday) — only today's completions vs today's chore list
-  const todayDone = weekendDay ? (earnings.weekendStats?.actual ?? 0) : todayCompletions.length
-  const todayTotal = weekendDay ? (earnings.weekendStats?.possible ?? 0) : weekdayItems.length
+  // Daily progress — always today's everyday chore completions
+  const todayDone = todayCompletions.length
+  const todayTotal = weekdayItems.length
   const pct = todayTotal > 0 ? Math.round((todayDone / todayTotal) * 100) : 0
 
   return (
     <div className="card card-gold" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Weekday view ─────────────────────────────────────────────────── */}
-      {!weekendDay ? (
+      {/* ── Everyday chores (shown every day) ─────────────────────────── */}
+      <div className="card-title">⭐ {dayName}'s Chores</div>
+      <div className="chore-list">
+        {weekdayItems.map(chore => {
+          const done = todayCompletions.includes(chore.id)
+          return (
+            <div
+              key={chore.id}
+              className={`chore-item ${done ? 'completed' : ''}`}
+              onClick={() => onWeekdayToggle(chore.id)}
+            >
+              <span className="chore-emoji">{chore.emoji}</span>
+              <span className="chore-name">{chore.name}</span>
+              <span className="chore-check">{done ? '✓' : ''}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* ── Weekend chores (only on Sat/Sun) ───────────────────────────── */}
+      {weekendDay && (
         <>
-          <div className="card-title">⭐ {dayName}'s Chores</div>
-          <div className="chore-list">
-            {weekdayItems.map(chore => {
-              const done = todayCompletions.includes(chore.id)
-              return (
-                <div
-                  key={chore.id}
-                  className={`chore-item ${done ? 'completed' : ''}`}
-                  onClick={() => onWeekdayToggle(chore.id)}
-                >
-                  <span className="chore-emoji">{chore.emoji}</span>
-                  <span className="chore-name">{chore.name}</span>
-                  <span className="chore-check">{done ? '✓' : ''}</span>
-                </div>
-              )
-            })}
-          </div>
-        </>
-      ) : (
-        /* ── Weekend view ──────────────────────────────────────────────── */
-        <>
-          <div className="card-title">🌟 Weekend Chores</div>
+          <div className="card-title" style={{ marginTop: 12 }}>🌟 Weekend Chores</div>
           {activeWeekendChores.length === 0 ? (
             <div className="no-weekend-chores">
               <div style={{ fontSize: '2.5rem' }}>😴</div>
@@ -87,16 +85,18 @@ export default function ChoreList({ chores, settings, balance, onWeekdayToggle, 
       <div className="chore-progress" style={{ marginTop: 'auto' }}>
         <div className="progress-stats">
           <span>
-            {weekendDay ? 'Weekend' : 'Today'}: {todayDone}/{todayTotal}
+            Today: {todayDone}/{todayTotal}
           </span>
         </div>
         <div className="progress-bar-bg">
           <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
         </div>
-        <div className="allowance-badge">
-          💰 On track: ${projected.toFixed(2)} / ${(settings?.allowanceAmount ?? 3).toFixed(2)}
-          {projected >= (settings?.allowanceAmount ?? 3) && earnings.totalPossible > 0 && ' 🎉'}
-        </div>
+        {settings?.rewardDescription && (
+          <div className="allowance-badge">
+            🎯 Reward: {settings.rewardDescription}
+            {earnings.totalMissed === 0 && earnings.totalPossible > 0 && ' 🎉'}
+          </div>
+        )}
         {balance != null && (
           <div className="savings-badge">
             🐷 Savings Jar: ${balance.balance.toFixed(2)}

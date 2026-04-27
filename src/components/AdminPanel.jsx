@@ -167,6 +167,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   const [newAdminPin, setNewAdminPin] = useState('')
   const [newInviteCode, setNewInviteCode] = useState('')
   const [newDailyMessage, setNewDailyMessage] = useState('')
+  const [newReward, setNewReward] = useState('')
   const [settingsSaved, setSettingsSaved] = useState(false)
 
   // ── Auth ────────────────────────────────────────────────────────────────────
@@ -356,6 +357,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     if (newAdminPin.trim()) body.adminPin = newAdminPin.trim()
     if (newInviteCode.trim()) body.inviteCode = newInviteCode.trim().toUpperCase()
     if (newDailyMessage !== '') body.dailyMessage = newDailyMessage.trim()
+    if (newReward !== '') body.rewardDescription = newReward.trim()
     if (Object.keys(body).length === 0) return
     await adminFetch('/api/admin/settings', {
       method: 'PUT',
@@ -364,7 +366,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     })
     setSettingsSaved(true)
     setTimeout(() => setSettingsSaved(false), 2000)
-    setNewName(''); setNewAllowance(''); setNewDeduction(''); setNewAdminPin(''); setNewInviteCode(''); setNewDailyMessage('')
+    setNewName(''); setNewAllowance(''); setNewDeduction(''); setNewAdminPin(''); setNewInviteCode(''); setNewDailyMessage(''); setNewReward('')
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -414,7 +416,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                   className={`tab-btn ${tab === t ? 'active' : ''}`}
                   onClick={() => { setTab(t); if (t === 'kids') loadKids() }}
                 >
-                  {{ chores: '📋 Weekday', weekend: '🌟 Weekend', alarms: '⏰ Alarms', calendar: '📅 Calendar', challenges: '💪 Challenges', wallet: '🐷 Wallet', history: '📊 History', kids: '👶 Kids', settings: '🔧 Settings' }[t]}
+                  {{ chores: '📋 Everyday', weekend: '🌟 Weekend', alarms: '⏰ Alarms', calendar: '📅 Calendar', challenges: '💪 Challenges', wallet: '🐷 Wallet', history: '📊 History', kids: '👶 Kids', settings: '🔧 Settings' }[t]}
                 </button>
               ))}
             </div>
@@ -424,7 +426,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
               {/* ── WEEKDAY CHORES ────────────────────────────────────────── */}
               {tab === 'chores' && (
                 <>
-                  <div className="admin-section-title">Add Weekday Chore</div>
+                  <div className="admin-section-title">Add Everyday Chore</div>
                   <div className="admin-form-row" style={{ alignItems: 'flex-start' }}>
                     <div className="admin-input-group">
                       <label className="admin-label">Name</label>
@@ -447,13 +449,13 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                     </div>
                   </div>
 
-                  <div className="admin-section-title" style={{ marginTop: 12 }}>Current Weekday Chores</div>
+                  <div className="admin-section-title" style={{ marginTop: 12 }}>Current Everyday Chores</div>
                   <div className="admin-list">
                     {(localChores?.weekday?.items || []).map(chore => (
                       <div key={chore.id} className="admin-list-item">
                         <span style={{ fontSize: '1.4rem' }}>{chore.emoji}</span>
                         <div className="admin-list-item-info">{chore.name}
-                          <div className="admin-list-item-sub">Daily — Mon to Fri</div>
+                          <div className="admin-list-item-sub">Daily — Every Day</div>
                         </div>
                         <button className="admin-btn-danger" onClick={() => deleteWeekdayChore(chore.id)}>Remove</button>
                       </div>
@@ -939,10 +941,10 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                         <div key={i} className="history-item">
                           <div className="history-week">Week of {h.week}</div>
                           <div className="history-status" style={{ fontSize: '1.8rem' }}>
-                            {h.earnings >= (settings?.allowanceAmount ?? 3) ? '🏆' : h.earnings > 0 ? '⭐' : '📋'}
+                            {h.totalActual >= h.totalPossible && h.totalPossible > 0 ? '🏆' : h.totalActual > 0 ? '⭐' : '📋'}
                           </div>
-                          <div style={{ fontWeight: 700, fontSize: '1.2rem', color: '#FFD700' }}>
-                            ${h.earnings?.toFixed(2) ?? '—'}
+                          <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#FFD700' }}>
+                            {h.totalActual}/{h.totalPossible} done
                           </div>
                           <div className="history-count">
                             {h.totalActual}/{h.totalPossible} chores
@@ -969,6 +971,20 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                   <div className="admin-input-group">
                     <label className="admin-label">Deduction per Missed Chore ($)</label>
                     <input type="number" className="admin-input" placeholder={settings?.deductionPerMissedChore ?? 0.25} value={newDeduction} min="0" step="0.05" onChange={e => setNewDeduction(e.target.value)} />
+                  </div>
+                  <div className="admin-input-group">
+                    <label className="admin-label">Weekly Reward (what Asher earns for completing all chores)</label>
+                    {settings?.rewardDescription && (
+                      <div style={{ background: 'rgba(78,205,196,0.1)', border: '1px solid rgba(78,205,196,0.3)', borderRadius: 12, padding: '10px 16px', marginBottom: 8, fontSize: '0.9rem', color: 'var(--teal)' }}>
+                        Current: "{settings.rewardDescription}"
+                      </div>
+                    )}
+                    <input
+                      className="admin-input"
+                      placeholder="e.g. 1 day of video games"
+                      value={newReward}
+                      onChange={e => setNewReward(e.target.value)}
+                    />
                   </div>
                   <div className="admin-section-title" style={{ marginTop: 16 }}>Family Invite Code</div>
                   <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>
