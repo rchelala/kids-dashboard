@@ -20,6 +20,15 @@ function isWeekend() {
   return d === 0 || d === 6
 }
 
+// Active hours: 5:30am - 6:30pm. Outside this window the kiosk stops polling
+// to keep Vercel function invocations under the free-tier limit. The local
+// alarm check loop keeps running, so the morning alarm still fires on time.
+function isActiveHours() {
+  const now = new Date()
+  const minutes = now.getHours() * 60 + now.getMinutes()
+  return minutes >= (5 * 60 + 30) && minutes < (18 * 60 + 30)
+}
+
 export default function App() {
   const [authCtx, setAuthCtx] = useState(null) // { session, kid, familyId }
   const authCtxRef = useRef(null)
@@ -57,34 +66,28 @@ export default function App() {
   const fetchData = useCallback(async () => {
     if (!authCtxRef.current) return
     try {
-      const [choresRes, alarmsRes, eventsRes, settingsRes, balanceRes, challengesRes] = await Promise.all([
-        authFetch('/api/chores'),
-        authFetch('/api/alarms'),
-        authFetch('/api/calendar'),
-        authFetch('/api/settings'),
-        authFetch('/api/balance'),
-        authFetch('/api/challenges')
-      ])
-      const [choresData, alarmsData, eventsData, settingsData, balanceData, challengesData] = await Promise.all([
-        choresRes.json(), alarmsRes.json(), eventsRes.json(), settingsRes.json(), balanceRes.json(), challengesRes.json()
-      ])
-      setChores(choresData)
-      setAlarms(alarmsData)
-      setEvents(eventsData)
-      setSettings(settingsData)
-      setBalance(balanceData)
-      setChallenges(Array.isArray(challengesData) ? challengesData : [])
+      const res = await authFetch('/api/snapshot')
+      const data = await res.json()
+      if (data.chores) setChores(data.chores)
+      if (data.alarms) setAlarms(data.alarms)
+      if (data.events) setEvents(data.events)
+      if (data.settings) setSettings(data.settings)
+      if (data.balance) setBalance(data.balance)
+      setChallenges(Array.isArray(data.challenges) ? data.challenges : [])
     } catch (err) {
       console.error('Failed to fetch data:', err)
     }
   }, [authFetch])
 
   useEffect(() => {
-    if (authCtx) {
-      fetchData()
-      const id = setInterval(fetchData, 60000)
-      return () => clearInterval(id)
-    }
+    if (!authCtx) return
+    // First load: always fetch so the kiosk has data, even if started during quiet hours.
+    fetchData()
+    // Then poll every 5 minutes, but skip the network call outside active hours.
+    const id = setInterval(() => {
+      if (isActiveHours()) fetchData()
+    }, 300000)
+    return () => clearInterval(id)
   }, [authCtx, fetchData])
 
   // Alarm check every second

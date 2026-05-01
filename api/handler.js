@@ -186,6 +186,35 @@ module.exports = async function handler(req, res) {
       .single()
     if (!kidRow) return res.status(403).json({ error: 'Kid not in family' })
 
+    // GET /api/snapshot — bundled dashboard read (chores+alarms+calendar+settings+balance+challenges)
+    // Replaces 6 parallel polling calls from the kiosk with one. See plan: cut Vercel free-tier usage.
+    if (method === 'GET' && path === 'snapshot') {
+      const [chores, settings, family, alarmsRow, localEventsRow, balanceRow, challengesRow] = await Promise.all([
+        checkAndResetChores(kidId),
+        getSettings(kidId),
+        getFamilyInfo(familyId),
+        supabase.from('alarms').select('*').eq('kid_id', kidId).order('time'),
+        supabase.from('calendar_events').select('*').eq('family_id', familyId).is('source', null),
+        supabase.from('balance').select('*').eq('kid_id', kidId).single(),
+        supabase.from('challenges').select('*').eq('kid_id', kidId).order('created_at')
+      ])
+      const earnings = calculateEarnings(chores, settings)
+      const todayCompletions = chores.weekday.completions[getTodayKey()] || []
+      const icalEvents = await getICalEvents(settings.icalUrl)
+      const events = [...(localEventsRow.data || []), ...icalEvents].sort((a, b) => a.date.localeCompare(b.date))
+      res.setHeader('Cache-Control', 'private, max-age=60, stale-while-revalidate=120')
+      return res.json({
+        chores: { ...chores, earnings, todayCompletions },
+        alarms: alarmsRow.data || [],
+        events,
+        settings: { ...settings, inviteCode: family?.inviteCode, dailyMessage: family?.dailyMessage || '' },
+        balance: balanceRow.data
+          ? { balance: Number(balanceRow.data.balance), transactions: balanceRow.data.transactions || [] }
+          : { balance: 0, transactions: [] },
+        challenges: challengesRow.data || []
+      })
+    }
+
     // GET /api/settings
     if (method === 'GET' && path === 'settings') {
       const settings = await getSettings(kidId)
