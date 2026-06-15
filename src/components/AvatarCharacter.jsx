@@ -7,17 +7,18 @@ function loadAvatar(kidId) {
 }
 
 function saveAvatar(kidId, avatar) {
-  localStorage.setItem(`avatar_${kidId}`, JSON.stringify(avatar))
+  try { localStorage.setItem(`avatar_${kidId}`, JSON.stringify(avatar)) } catch {}
 }
 
 export default function AvatarCharacter({ kidId, alarmActive, choreState, lastChoreAt, justLoggedIn }) {
-  const [avatar, setAvatar] = useState(() => loadAvatar(kidId) || { type: 'mushroom', color: 'purple' })
-  const [isFirstChoice, setIsFirstChoice] = useState(() => !loadAvatar(kidId))
+  const initialAvatar = loadAvatar(kidId)
+  const [avatar, setAvatar] = useState(initialAvatar || { type: 'mushroom', color: 'purple' })
+  const [isFirstChoice, setIsFirstChoice] = useState(!initialAvatar)
   const [showPicker, setShowPicker] = useState(false)
   const [visualState, setVisualState] = useState('idle')
   const lastTapRef = useRef(0)
   const cheerTimerRef = useRef(null)
-  const danceShownRef = useRef(false)
+  const danceShownRef = useRef(false) // prevents dance replaying while choreState stays 'all'
 
   // Reload avatar when kid switches
   useEffect(() => {
@@ -29,10 +30,12 @@ export default function AvatarCharacter({ kidId, alarmActive, choreState, lastCh
   // Animation state machine — priority order matches spec
   useEffect(() => {
     clearTimeout(cheerTimerRef.current)
+    cheerTimerRef.current = null
 
-    if (alarmActive) { setVisualState('dodge'); return }
-
-    if (lastChoreAt && (Date.now() - lastChoreAt) < 2000) {
+    if (alarmActive) {
+      danceShownRef.current = false
+      setVisualState('dodge')
+    } else if (lastChoreAt && (Date.now() - lastChoreAt) < 2000) {
       setVisualState('cheer')
       const remaining = 2000 - (Date.now() - lastChoreAt)
       cheerTimerRef.current = setTimeout(() => {
@@ -42,10 +45,7 @@ export default function AvatarCharacter({ kidId, alarmActive, choreState, lastCh
           return 'idle'
         })
       }, remaining)
-      return
-    }
-
-    if (choreState === 'all') {
+    } else if (choreState === 'all') {
       if (!danceShownRef.current) {
         danceShownRef.current = true
         setVisualState('dance')
@@ -53,12 +53,12 @@ export default function AvatarCharacter({ kidId, alarmActive, choreState, lastCh
       } else {
         setVisualState('idle')
       }
-      return
+    } else {
+      danceShownRef.current = false
+      if (justLoggedIn)               setVisualState('wave')
+      else if (choreState === 'none') setVisualState('sad')
+      else                            setVisualState('idle')
     }
-    danceShownRef.current = false
-    if (justLoggedIn)          { setVisualState('wave');  return }
-    if (choreState === 'none') { setVisualState('sad');   return }
-    setVisualState('idle')
 
     return () => clearTimeout(cheerTimerRef.current)
   }, [alarmActive, choreState, lastChoreAt, justLoggedIn])
