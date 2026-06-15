@@ -8,6 +8,7 @@ import Celebration from './components/Celebration'
 import AdminPanel from './components/AdminPanel'
 import AuthFlow from './components/AuthFlow'
 import WeatherWidget from './components/WeatherWidget'
+import AvatarCharacter from './components/AvatarCharacter'
 
 const DAY_MAP = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
 
@@ -258,6 +259,14 @@ export default function App() {
           onSwitchKid={handleSwitchKid}
         />
       )}
+
+      <AvatarCharacter
+        kidId={authCtx.kid.id}
+        alarmActive={!!activeAlarm}
+        choreState="some"
+        lastChoreAt={null}
+        justLoggedIn={false}
+      />
     </div>
   )
 }
