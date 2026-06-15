@@ -11,9 +11,8 @@ function saveAvatar(kidId, avatar) {
 }
 
 export default function AvatarCharacter({ kidId, alarmActive, choreState, lastChoreAt, justLoggedIn }) {
-  const initialAvatar = loadAvatar(kidId)
-  const [avatar, setAvatar] = useState(initialAvatar || { type: 'mushroom', color: 'purple' })
-  const [isFirstChoice, setIsFirstChoice] = useState(!initialAvatar)
+  const [avatar, setAvatar] = useState(() => loadAvatar(kidId) || { type: 'mushroom', color: 'purple' })
+  const [isFirstChoice, setIsFirstChoice] = useState(() => !loadAvatar(kidId))
   const [showPicker, setShowPicker] = useState(false)
   const [visualState, setVisualState] = useState('idle')
   const lastTapRef = useRef(0)
@@ -25,6 +24,7 @@ export default function AvatarCharacter({ kidId, alarmActive, choreState, lastCh
     const saved = loadAvatar(kidId)
     setAvatar(saved || { type: 'mushroom', color: 'purple' })
     setIsFirstChoice(!saved)
+    danceShownRef.current = false
   }, [kidId])
 
   // Animation state machine — priority order matches spec
@@ -39,11 +39,9 @@ export default function AvatarCharacter({ kidId, alarmActive, choreState, lastCh
       setVisualState('cheer')
       const remaining = 2000 - (Date.now() - lastChoreAt)
       cheerTimerRef.current = setTimeout(() => {
-        setVisualState(() => {
-          if (choreState === 'all') return 'dance'
-          if (choreState === 'none') return 'sad'
-          return 'idle'
-        })
+        if (choreState === 'all') setVisualState('dance')
+        else if (choreState === 'none') setVisualState('sad')
+        else setVisualState('idle')
       }, remaining)
     } else if (choreState === 'all') {
       if (!danceShownRef.current) {
