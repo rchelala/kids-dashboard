@@ -23,7 +23,15 @@ export default function AvatarPicker({ current, onSave, onClose }) {
   const previewColors = COLOR_MAP[preview.color] || COLOR_MAP.purple
 
   return (
-    <div className="avatar-picker-overlay" onClick={onClose}>
+    <div
+      className="avatar-picker-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Avatar picker"
+      onClick={onClose}
+      onKeyDown={e => e.key === 'Escape' && onClose()}
+      tabIndex={-1}
+    >
       <div className="avatar-picker-modal" onClick={e => e.stopPropagation()}>
         <h2 className="avatar-picker-title">Pick your character!</h2>
 
@@ -51,7 +59,8 @@ export default function AvatarPicker({ current, onSave, onClose }) {
               className={`avatar-color-swatch${preview.color === name ? ' selected' : ''}`}
               style={{ background: swatch }}
               onClick={() => setPreview(p => ({ ...p, color: name }))}
-              aria-label={name}
+              aria-label={`${name} color`}
+              aria-pressed={preview.color === name}
             />
           ))}
         </div>
