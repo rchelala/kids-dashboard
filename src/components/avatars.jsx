@@ -9,7 +9,7 @@ export const COLOR_MAP = {
 
 export function MushroomHead({ c }) {
   return (
-    <svg className="avatar-svg" viewBox="0 0 44 62" xmlns="http://www.w3.org/2000/svg">
+    <svg className="avatar-svg" viewBox="0 0 44 62" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <ellipse cx="22" cy="60" rx="9" ry="2.5" fill={c.dark} opacity="0.3" />
       <rect x="15" y="38" width="14" height="16" rx="4" fill={c.mid} />
       <line x1="15" y1="44" x2="6" y2="51" stroke={c.dark} strokeWidth="2.5" strokeLinecap="round" />
@@ -28,11 +28,12 @@ export function MushroomHead({ c }) {
 
 export function Robot({ c }) {
   return (
-    <svg className="avatar-svg" viewBox="0 0 44 62" xmlns="http://www.w3.org/2000/svg">
+    <svg className="avatar-svg" viewBox="0 0 44 62" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <ellipse cx="22" cy="60" rx="9" ry="2.5" fill={c.dark} opacity="0.3" />
       <rect x="13" y="36" width="18" height="18" rx="3" fill={c.mid} />
       <rect x="17" y="40" width="10" height="6" rx="2" fill={c.light} opacity="0.6" />
       <circle cx="20" cy="43" r="1.5" fill={c.dark} />
+      {/* intentional fixed red status light */}
       <circle cx="24" cy="43" r="1.5" fill="#f87171" />
       <rect x="5" y="37" width="7" height="10" rx="3" fill={c.dark} />
       <rect x="32" y="37" width="7" height="10" rx="3" fill={c.dark} />
@@ -52,7 +53,7 @@ export function Robot({ c }) {
 
 export function Ghost({ c }) {
   return (
-    <svg className="avatar-svg" viewBox="0 0 44 66" xmlns="http://www.w3.org/2000/svg">
+    <svg className="avatar-svg" viewBox="0 0 44 66" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <ellipse cx="22" cy="64" rx="10" ry="3" fill={c.dark} opacity="0.15" />
       <ellipse cx="5" cy="34" rx="4" ry="6" fill={c.mid} />
       <ellipse cx="39" cy="34" rx="4" ry="6" fill={c.mid} />
@@ -70,7 +71,7 @@ export function Ghost({ c }) {
 
 export function Cat({ c }) {
   return (
-    <svg className="avatar-svg" viewBox="0 0 44 62" xmlns="http://www.w3.org/2000/svg">
+    <svg className="avatar-svg" viewBox="0 0 44 62" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <ellipse cx="22" cy="60" rx="9" ry="2.5" fill={c.dark} opacity="0.3" />
       <rect x="14" y="37" width="16" height="17" rx="5" fill={c.mid} />
       <line x1="14" y1="43" x2="5" y2="49" stroke={c.dark} strokeWidth="2.5" strokeLinecap="round" />
@@ -81,15 +82,15 @@ export function Cat({ c }) {
       <ellipse cx="22" cy="27" rx="13" ry="12" fill={c.light} />
       <polygon points="10,20 8,8 17,16" fill={c.mid} />
       <polygon points="34,20 36,8 27,16" fill={c.mid} />
-      <polygon points="11,19 10,11 16,16" fill="#f9a8d4" opacity="0.6" />
-      <polygon points="33,19 34,11 28,16" fill="#f9a8d4" opacity="0.6" />
+      <polygon points="11,19 10,11 16,16" fill={c.light} opacity="0.6" />
+      <polygon points="33,19 34,11 28,16" fill={c.light} opacity="0.6" />
       <circle cx="17" cy="27" r="4" fill="white" />
       <circle cx="27" cy="27" r="4" fill="white" />
       <ellipse cx="17.5" cy="27.5" rx="2" ry="2.5" fill={c.pupil} />
       <ellipse cx="27.5" cy="27.5" rx="2" ry="2.5" fill={c.pupil} />
       <circle cx="18" cy="26.5" r="1" fill="white" opacity="0.8" />
       <circle cx="28" cy="26.5" r="1" fill="white" opacity="0.8" />
-      <ellipse cx="22" cy="32" rx="2" ry="1.5" fill="#f9a8d4" />
+      <ellipse cx="22" cy="32" rx="2" ry="1.5" fill={c.mid} />
       <line x1="10" y1="31" x2="19" y2="32" stroke={c.dark} strokeWidth="1" opacity="0.5" />
       <line x1="25" y1="32" x2="34" y2="31" stroke={c.dark} strokeWidth="1" opacity="0.5" />
       <path d="M 19 34 Q 22 37 25 34" stroke={c.mouth} strokeWidth="1.5" fill="none" strokeLinecap="round" />
@@ -99,5 +100,6 @@ export function Cat({ c }) {
 
 export const CHAR_MAP = { mushroom: MushroomHead, robot: Robot, ghost: Ghost, cat: Cat }
 
+// Values map to .avatar-anim-{value} CSS classes in App.css
 // Ghost drifts, others bob
 export const IDLE_ANIM = { mushroom: 'bob', robot: 'bob', ghost: 'drift', cat: 'bob' }
