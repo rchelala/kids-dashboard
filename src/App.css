@@ -1517,7 +1517,7 @@ label.admin-label {
 .avatar-anim-drift{ animation: avatar-drift 3s   ease-in-out infinite; }
 .avatar-anim-wave { animation: avatar-wave  0.8s ease-in-out infinite; }
 .avatar-anim-cheer{ animation: avatar-cheer 0.5s ease-in-out; }
-.avatar-anim-dance{ animation: avatar-dance 0.5s ease-in-out infinite; }
+.avatar-anim-dance{ animation: avatar-dance 0.7s ease-in-out infinite; }
 .avatar-anim-sad  { animation: avatar-sad   3.5s ease-in-out infinite; }
 
 .avatar-anim-cheer .avatar-svg {
@@ -1538,7 +1538,7 @@ label.admin-label {
   position: fixed;
   inset: 0;
   background: rgba(8, 11, 26, 0.85);
-  z-index: 200;
+  z-index: 250;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1560,7 +1560,7 @@ label.admin-label {
 .avatar-picker-title {
   font-family: 'Fredoka One', cursive;
   font-size: 1.6rem;
-  color: #ffd700;
+  color: var(--gold);
   margin: 0;
   text-align: center;
 }
@@ -1602,9 +1602,9 @@ label.admin-label {
 }
 
 .avatar-char-btn.selected {
-  border-color: #ffd700;
+  border-color: var(--gold);
   background: rgba(255, 215, 0, 0.1);
-  color: #ffd700;
+  color: var(--gold);
 }
 
 .avatar-picker-colors {
@@ -1630,8 +1630,8 @@ label.admin-label {
 }
 
 .avatar-picker-confirm {
-  background: linear-gradient(135deg, #ffd700, #fb923c);
-  color: #080b1a;
+  background: linear-gradient(135deg, var(--gold), #fb923c);
+  color: var(--bg);
   font-family: 'Fredoka One', cursive;
   font-size: 1.1rem;
   border: none;
