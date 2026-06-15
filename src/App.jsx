@@ -8,6 +8,7 @@ import Celebration from './components/Celebration'
 import AdminPanel from './components/AdminPanel'
 import AuthFlow from './components/AuthFlow'
 import WeatherWidget from './components/WeatherWidget'
+import AvatarCharacter from './components/AvatarCharacter'
 
 const DAY_MAP = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
 
@@ -29,6 +30,27 @@ function isActiveHours() {
   return minutes >= (5 * 60 + 30) && minutes < (18 * 60 + 30)
 }
 
+function deriveChoreState(chores) {
+  if (!chores) return 'some'
+  const isAfter10am = new Date().getHours() >= 10
+
+  if (!isWeekend()) {
+    const todayDone = chores.todayCompletions || []
+    const items = chores.weekday?.items || []
+    if (items.length === 0) return 'some'
+    if (items.every(c => todayDone.includes(c.id))) return 'all'
+    if (items.some(c => todayDone.includes(c.id))) return 'some'
+    return isAfter10am ? 'none' : 'some'
+  } else {
+    const active = chores.weekend?.active || []
+    const completions = chores.weekend?.completions || {}
+    if (active.length === 0) return 'some'
+    if (active.every(id => completions[id])) return 'all'
+    if (active.some(id => completions[id])) return 'some'
+    return isAfter10am ? 'none' : 'some'
+  }
+}
+
 export default function App() {
   const [authCtx, setAuthCtx] = useState(null) // { session, kid, familyId }
   const authCtxRef = useRef(null)
@@ -43,11 +65,20 @@ export default function App() {
   const [showCelebration, setShowCelebration] = useState(null)
   const [activeAlarm, setActiveAlarm] = useState(null)
   const [dismissedAlarms, setDismissedAlarms] = useState(new Set())
+  const [lastChoreCheckedAt, setLastChoreCheckedAt] = useState(null)
+  const [justLoggedIn, setJustLoggedIn] = useState(false)
 
   function handleReady(ctx) {
     authCtxRef.current = ctx
     setAuthCtx(ctx)
   }
+
+  useEffect(() => {
+    if (!authCtx) return
+    setJustLoggedIn(true)
+    const id = setTimeout(() => setJustLoggedIn(false), 5000)
+    return () => clearTimeout(id)
+  }, [authCtx])
 
   // Authenticated fetch — JWT + kid/family headers on every request
   const authFetch = useCallback(async (url, options = {}) => {
@@ -137,6 +168,7 @@ export default function App() {
       const res = await authFetch(`/api/chores/weekday/${choreId}/toggle`, { method: 'POST' })
       const updated = await res.json()
       setChores(updated)
+      setLastChoreCheckedAt(Date.now())
       checkCelebration(updated)
     } catch (err) { console.error(err) }
   }
@@ -146,6 +178,7 @@ export default function App() {
       const res = await authFetch(`/api/chores/weekend/${choreId}/toggle`, { method: 'POST' })
       const updated = await res.json()
       setChores(updated)
+      setLastChoreCheckedAt(Date.now())
       checkCelebration(updated)
     } catch (err) { console.error(err) }
   }
@@ -258,6 +291,14 @@ export default function App() {
           onSwitchKid={handleSwitchKid}
         />
       )}
+
+      <AvatarCharacter
+        kidId={authCtx.kid.id}
+        alarmActive={!!activeAlarm}
+        choreState={deriveChoreState(chores)}
+        lastChoreAt={lastChoreCheckedAt}
+        justLoggedIn={justLoggedIn}
+      />
     </div>
   )
 }
