@@ -1,4 +1,4 @@
-export default function AvatarPicker({ onClose }) {
+export default function AvatarPicker({ current, onSave, onClose }) {
   return (
     <div className="avatar-picker-overlay" onClick={onClose}>
       <div className="avatar-picker-modal" onClick={e => e.stopPropagation()}>
