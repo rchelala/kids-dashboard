@@ -30,6 +30,24 @@ function isActiveHours() {
   return minutes >= (5 * 60 + 30) && minutes < (18 * 60 + 30)
 }
 
+// Dismissed alarms are persisted so a kiosk reload inside the same minute
+// doesn't immediately re-fire an alarm the kid already turned off. Keys embed
+// the date, so anything not from today is dropped on load.
+const DISMISSED_KEY = 'dismissedAlarms'
+
+function loadDismissedAlarms() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DISMISSED_KEY))
+    if (!Array.isArray(saved)) return new Set()
+    const today = new Date().toDateString()
+    return new Set(saved.filter(k => typeof k === 'string' && k.includes(today)))
+  } catch { return new Set() }
+}
+
+function saveDismissedAlarms(keys) {
+  try { localStorage.setItem(DISMISSED_KEY, JSON.stringify([...keys])) } catch {}
+}
+
 function deriveChoreState(chores) {
   if (!chores) return 'some'
   const isAfter10am = new Date().getHours() >= 10
@@ -64,7 +82,7 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false)
   const [showCelebration, setShowCelebration] = useState(null)
   const [activeAlarm, setActiveAlarm] = useState(null)
-  const [dismissedAlarms, setDismissedAlarms] = useState(new Set())
+  const [dismissedAlarms, setDismissedAlarms] = useState(loadDismissedAlarms)
   const [lastChoreCheckedAt, setLastChoreCheckedAt] = useState(null)
   const [justLoggedIn, setJustLoggedIn] = useState(false)
 
@@ -207,7 +225,13 @@ export default function App() {
   }
 
   const handleDismissAlarm = () => {
-    if (activeAlarm) setDismissedAlarms(prev => new Set([...prev, activeAlarm.dismissKey]))
+    if (activeAlarm) {
+      setDismissedAlarms(prev => {
+        const next = new Set([...prev, activeAlarm.dismissKey])
+        saveDismissedAlarms(next)
+        return next
+      })
+    }
     setActiveAlarm(null)
   }
 

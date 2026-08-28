@@ -12,11 +12,35 @@ export const SOUND_OPTIONS = [
   { id: 'drumroll', label: '🥁 Drum Roll' },
 ]
 
+// One AudioContext for the whole app, created lazily and never thrown away.
+// Constructing a context opens a real audio device — doing that per sound (the
+// alarm repeats every 3s) piled up dozens of them on the Pi and starved the
+// renderer until touch stopped responding.
+let audioCtx = null
+let masterGain = null
+
+function getCtx() {
+  const AudioContext = window.AudioContext || window.webkitAudioContext
+  if (!AudioContext) return null
+  if (!audioCtx) audioCtx = new AudioContext()
+  return audioCtx
+}
+
+// Everything routes through one gain node so stopSound() can cut audio that has
+// already been scheduled ahead of ctx.currentTime.
+function dest(ctx) {
+  if (!masterGain) {
+    masterGain = ctx.createGain()
+    masterGain.gain.value = 1
+    masterGain.connect(ctx.destination)
+  }
+  return masterGain
+}
+
 export function playSound(soundType) {
   try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext
-    if (!AudioContext) return
-    const ctx = new AudioContext()
+    const ctx = getCtx()
+    if (!ctx) return
     const fns = {
       beeper: playBeeper,
       siren: playSiren,
@@ -29,15 +53,26 @@ export function playSound(soundType) {
       drumroll: playDrumRoll
     }
     const fn = fns[soundType] || playBeeper
-    ctx.resume().then(() => fn(ctx))
+    ctx.resume().then(() => fn(ctx)).catch(() => {})
   } catch (_) {}
+}
+
+// Silence immediately. Detaching the master gain orphans any oscillator that is
+// still scheduled; they go quiet and get collected when they end.
+export function stopSound() {
+  if (!masterGain) return
+  try {
+    masterGain.gain.value = 0
+    masterGain.disconnect()
+  } catch (_) {}
+  masterGain = null
 }
 
 function note(ctx, freq, start, dur, type = 'sine', vol = 0.3) {
   const osc = ctx.createOscillator()
   const gain = ctx.createGain()
   osc.connect(gain)
-  gain.connect(ctx.destination)
+  gain.connect(dest(ctx))
   osc.type = type
   osc.frequency.setValueAtTime(freq, start)
   gain.gain.setValueAtTime(vol, start)
@@ -55,7 +90,7 @@ function playBeeper(ctx) {
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.connect(gain)
-    gain.connect(ctx.destination)
+    gain.connect(dest(ctx))
     osc.type = 'square'
     osc.frequency.setValueAtTime(880, t)
     gain.gain.setValueAtTime(0.8, t)
@@ -73,7 +108,7 @@ function playSiren(ctx) {
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.connect(gain)
-    gain.connect(ctx.destination)
+    gain.connect(dest(ctx))
     osc.type = 'sawtooth'
     osc.frequency.setValueAtTime(400, t)
     osc.frequency.linearRampToValueAtTime(900, t + 0.45)
@@ -93,7 +128,7 @@ function playBuzzer(ctx) {
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.connect(gain)
-    gain.connect(ctx.destination)
+    gain.connect(dest(ctx))
     osc.type = 'sawtooth'
     osc.frequency.setValueAtTime(150, t)
     gain.gain.setValueAtTime(0.9, t)
@@ -121,7 +156,7 @@ function playRocket(ctx) {
   const osc = ctx.createOscillator()
   const gain = ctx.createGain()
   osc.connect(gain)
-  gain.connect(ctx.destination)
+  gain.connect(dest(ctx))
   osc.type = 'sawtooth'
   osc.frequency.setValueAtTime(80, ctx.currentTime)
   osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 1.2)
@@ -152,7 +187,7 @@ function playSonar(ctx) {
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.connect(gain)
-    gain.connect(ctx.destination)
+    gain.connect(dest(ctx))
     osc.type = 'sine'
     osc.frequency.setValueAtTime(900, t)
     osc.frequency.exponentialRampToValueAtTime(400, t + 0.5)
@@ -174,7 +209,7 @@ function playDrumRoll(ctx) {
     src.buffer = buf
     const gain = ctx.createGain()
     src.connect(gain)
-    gain.connect(ctx.destination)
+    gain.connect(dest(ctx))
     gain.gain.setValueAtTime(0.3, t)
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08)
     src.start(t)

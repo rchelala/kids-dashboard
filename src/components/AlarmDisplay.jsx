@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { playSound } from '../utils/sounds'
+import { playSound, stopSound } from '../utils/sounds'
 
 const DAY_MAP = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
-const DAY_LABELS = { sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat' }
+
+// Safety valves so the kiosk can never sit ringing indefinitely.
+const SOUND_TIMEOUT_MS = 2 * 60 * 1000
+const AUTO_DISMISS_MS = 5 * 60 * 1000
 
 function getNextAlarm(alarms) {
   const now = new Date()
@@ -52,8 +55,14 @@ function getDismissLabel(label = '') {
 }
 
 export default function AlarmDisplay({ alarms, activeAlarm, onDismiss }) {
+  // `tick` is never read — the state update is what re-renders the bar so the
+  // "in 20m" countdown below stays current. Don't remove it.
   const [tick, setTick] = useState(0)
-  const soundInterval = useRef(null)
+
+  // onDismiss is rebuilt on every App render; hold it in a ref so the sound and
+  // timer effects below key off `activeAlarm` alone and never restart mid-alarm.
+  const onDismissRef = useRef(onDismiss)
+  useEffect(() => { onDismissRef.current = onDismiss })
 
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 60000)
@@ -62,21 +71,42 @@ export default function AlarmDisplay({ alarms, activeAlarm, onDismiss }) {
 
   // Play the alarm's chosen sound on repeat when active
   useEffect(() => {
-    if (activeAlarm) {
-      const sound = activeAlarm.sound || 'rocket'
-      playSound(sound)
-      soundInterval.current = setInterval(() => playSound(sound), 3000)
-    } else {
-      clearInterval(soundInterval.current)
+    if (!activeAlarm) {
+      stopSound()
+      return
     }
-    return () => clearInterval(soundInterval.current)
+    const sound = activeAlarm.sound || 'rocket'
+    playSound(sound)
+    const soundId = setInterval(() => playSound(sound), 3000)
+    const quietId = setTimeout(() => {
+      clearInterval(soundId)
+      stopSound()
+    }, SOUND_TIMEOUT_MS)
+    const giveUpId = setTimeout(() => onDismissRef.current(), AUTO_DISMISS_MS)
+    return () => {
+      clearInterval(soundId)
+      clearTimeout(quietId)
+      clearTimeout(giveUpId)
+      stopSound()
+    }
+  }, [activeAlarm])
+
+  // A keyboard is a guaranteed escape hatch if the touchscreen is misbehaving.
+  useEffect(() => {
+    if (!activeAlarm) return
+    const onKey = (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') onDismissRef.current()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [activeAlarm])
 
   const nextAlarm = getNextAlarm(alarms)
 
   if (activeAlarm) {
+    // Tapping anywhere on the red screen dismisses — not just the button.
     return (
-      <div className="alarm-overlay">
+      <div className="alarm-overlay" onClick={onDismiss}>
         <div className="alarm-modal">
           <div className="alarm-modal-icon">⏰</div>
           <div className="alarm-modal-time">{formatAlarmTime(activeAlarm.time)}</div>

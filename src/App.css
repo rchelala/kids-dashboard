@@ -727,30 +727,47 @@ html, body, #root {
 .alarm-bar .alarm-countdown { color: var(--coral); margin-left: 8px; }
 
 /* Active alarm overlay */
+/* Deliberately no backdrop-filter here. A viewport-sized blur combined with an
+   animated `background` forced Chromium to re-blur the whole screen every frame
+   — on the Pi that starved the main thread and touch input stopped landing.
+   An opaque background also lets the compositor skip painting the dashboard,
+   its blurred cards and the twinkling starfield underneath. */
 .alarm-overlay {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(255, 50, 50, 0.15);
-  backdrop-filter: blur(4px);
+  background: rgba(40, 8, 8, 0.96);
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: manipulation;
+}
+
+/* The flash lives on a pseudo-element animating opacity only, which the
+   compositor handles without repainting anything. */
+.alarm-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 50, 50, 0.22);
+  pointer-events: none;
   animation: alarm-flash 1s ease-in-out infinite;
 }
 
 @keyframes alarm-flash {
-  0%, 100% { background: rgba(255, 50, 50, 0.15); }
-  50%       { background: rgba(255, 50, 50, 0.3); }
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
 }
 
 .alarm-modal {
+  position: relative;
   background: #1a0a0a;
   border: 2px solid var(--coral);
   border-radius: 28px;
   padding: 48px 60px;
   text-align: center;
   box-shadow: 0 0 60px rgba(255, 107, 107, 0.5);
+  max-height: 92vh;
 }
 
 .alarm-modal-icon { font-size: 5rem; margin-bottom: 16px; animation: ring 0.5s ease-in-out infinite alternate; }
@@ -766,12 +783,15 @@ html, body, #root {
   color: white;
   border: none;
   border-radius: 99px;
-  padding: 14px 40px;
+  padding: 20px 56px;
+  min-height: 72px;
   font-size: 1.2rem;
   font-weight: 800;
   font-family: var(--font);
   cursor: pointer;
   transition: transform 0.1s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0.35);
 }
 .alarm-dismiss-btn:hover { transform: scale(1.05); }
 .alarm-dismiss-btn:active { transform: scale(0.97); }
@@ -1430,6 +1450,31 @@ label.admin-label {
 
   .alarm-bar .alarm-icon {
     font-size: 1rem;
+  }
+
+  /* Keep the whole ringing modal — button included — on a short kiosk screen.
+     html/body are overflow:hidden, so anything below the fold is unreachable. */
+  .alarm-modal {
+    padding: 20px 36px;
+  }
+
+  .alarm-modal-icon {
+    font-size: 2.5rem;
+    margin-bottom: 4px;
+  }
+
+  .alarm-modal-time {
+    font-size: 2.5rem;
+  }
+
+  .alarm-modal-label {
+    font-size: 1.1rem;
+  }
+
+  .alarm-dismiss-btn {
+    margin-top: 16px;
+    padding: 16px 44px;
+    min-height: 60px;
   }
 }
 
