@@ -1,7 +1,7 @@
 const {
   getMondayKey, getTodayKey, getSettings, updateSettings,
   getFamilyInfo, updateFamilyInfo,
-  getChoresRaw, writeChores, calculateEarnings, checkAndResetChores, getICalEvents
+  getChoresRaw, writeChores, calculateEarnings, computeWeekStars, starsFor, checkAndResetChores, getICalEvents
 } = require('./_lib/helpers')
 const { supabase } = require('./_lib/supabase')
 
@@ -159,6 +159,8 @@ module.exports = async function handler(req, res) {
       await supabase.from('chores').delete().eq('kid_id', targetKidId)
       await supabase.from('balance').delete().eq('kid_id', targetKidId)
       await supabase.from('alarms').delete().eq('kid_id', targetKidId)
+      await supabase.from('challenges').delete().eq('kid_id', targetKidId)
+      await supabase.from('rewards').delete().eq('kid_id', targetKidId)
       await supabase.from('kids').delete().eq('id', targetKidId)
       const { data: allKids } = await supabase.from('kids').select('*').eq('family_id', familyId).order('created_at')
       return res.json(allKids || [])
@@ -189,16 +191,18 @@ module.exports = async function handler(req, res) {
     // GET /api/snapshot — bundled dashboard read (chores+alarms+calendar+settings+balance+challenges)
     // Replaces 6 parallel polling calls from the kiosk with one. See plan: cut Vercel free-tier usage.
     if (method === 'GET' && path === 'snapshot') {
-      const [chores, settings, family, alarmsRow, localEventsRow, balanceRow, challengesRow] = await Promise.all([
+      const [chores, settings, family, alarmsRow, localEventsRow, balanceRow, challengesRow, rewardsRow] = await Promise.all([
         checkAndResetChores(kidId),
         getSettings(kidId),
         getFamilyInfo(familyId),
         supabase.from('alarms').select('*').eq('kid_id', kidId).order('time'),
         supabase.from('calendar_events').select('*').eq('family_id', familyId).is('source', null),
         supabase.from('balance').select('*').eq('kid_id', kidId).single(),
-        supabase.from('challenges').select('*').eq('kid_id', kidId).order('created_at')
+        supabase.from('challenges').select('*').eq('kid_id', kidId).order('created_at'),
+        supabase.from('rewards').select('*').eq('kid_id', kidId).order('created_at')
       ])
       const earnings = calculateEarnings(chores, settings)
+      const stars = await starsFor(kidId, chores, settings)
       const todayCompletions = chores.weekday.completions[getTodayKey()] || []
       const icalEvents = await getICalEvents(settings.icalUrl)
       const events = [...(localEventsRow.data || []), ...icalEvents].sort((a, b) => a.date.localeCompare(b.date))
@@ -211,7 +215,9 @@ module.exports = async function handler(req, res) {
         balance: balanceRow.data
           ? { balance: Number(balanceRow.data.balance), transactions: balanceRow.data.transactions || [] }
           : { balance: 0, transactions: [] },
-        challenges: challengesRow.data || []
+        challenges: challengesRow.data || [],
+        rewards: rewardsRow.data || [],
+        stars
       })
     }
 
@@ -229,6 +235,11 @@ module.exports = async function handler(req, res) {
       if (req.body.childName !== undefined) kidUpdates.childName = req.body.childName
       if (req.body.allowanceAmount !== undefined) kidUpdates.allowanceAmount = Number(req.body.allowanceAmount)
       if (req.body.deductionPerMissedChore !== undefined) kidUpdates.deductionPerMissedChore = Number(req.body.deductionPerMissedChore)
+      if (req.body.starsPerDay !== undefined) {
+        const sp = Math.round(Number(req.body.starsPerDay))
+        if (isNaN(sp) || sp < 0) return res.status(400).json({ error: 'Invalid stars per day' })
+        kidUpdates.starsPerDay = sp
+      }
       if (req.body.icalUrl !== undefined) kidUpdates.icalUrl = req.body.icalUrl
       if (req.body.rewardDescription !== undefined) kidUpdates.rewardDescription = req.body.rewardDescription
       if (req.body.inviteCode !== undefined) familyUpdates.inviteCode = req.body.inviteCode
@@ -246,8 +257,9 @@ module.exports = async function handler(req, res) {
       const chores = await checkAndResetChores(kidId)
       const settings = await getSettings(kidId)
       const earnings = calculateEarnings(chores, settings)
+      const stars = await starsFor(kidId, chores, settings)
       const todayCompletions = chores.weekday.completions[getTodayKey()] || []
-      return res.json({ ...chores, earnings, todayCompletions })
+      return res.json({ ...chores, earnings, stars, todayCompletions })
     }
 
     // POST /api/chores/weekday/:id/toggle
@@ -263,7 +275,8 @@ module.exports = async function handler(req, res) {
       await writeChores(chores, kidId)
       const settings = await getSettings(kidId)
       const earnings = calculateEarnings(chores, settings)
-      return res.json({ ...chores, earnings, todayCompletions: arr })
+      const stars = await starsFor(kidId, chores, settings)
+      return res.json({ ...chores, earnings, stars, todayCompletions: arr })
     }
 
     // POST /api/chores/weekend/:id/toggle
@@ -275,8 +288,9 @@ module.exports = async function handler(req, res) {
       await writeChores(chores, kidId)
       const settings = await getSettings(kidId)
       const earnings = calculateEarnings(chores, settings)
+      const stars = await starsFor(kidId, chores, settings)
       const todayCompletions = chores.weekday.completions[getTodayKey()] || []
-      return res.json({ ...chores, earnings, todayCompletions })
+      return res.json({ ...chores, earnings, stars, todayCompletions })
     }
 
     // POST /api/chores/celebration-shown
@@ -509,6 +523,119 @@ module.exports = async function handler(req, res) {
       await supabase.from('challenges').update({ completed: !existing.completed }).eq('id', slug[1])
       const { data } = await supabase.from('challenges').select('*').eq('kid_id', kidId).order('created_at')
       return res.json(data || [])
+    }
+
+    // GET /api/rewards
+    if (method === 'GET' && path === 'rewards') {
+      const { data } = await supabase.from('rewards').select('*').eq('kid_id', kidId).order('created_at')
+      return res.json(data || [])
+    }
+
+    // POST /api/admin/rewards
+    if (method === 'POST' && path === 'admin/rewards') {
+      const { title, emoji, price, starCost } = req.body
+      if (!title) return res.status(400).json({ error: 'Title required' })
+      const cents = Math.round(Number(price || 0) * 100) / 100
+      if (isNaN(cents) || cents < 0) return res.status(400).json({ error: 'Invalid price' })
+      const stars = Math.round(Number(starCost || 0))
+      if (isNaN(stars) || stars < 0) return res.status(400).json({ error: 'Invalid star cost' })
+      await supabase.from('rewards').insert({
+        id: `rw${Date.now()}`,
+        kid_id: kidId,
+        title,
+        emoji: emoji || '🎁',
+        price: cents,
+        star_cost: stars
+      })
+      const { data } = await supabase.from('rewards').select('*').eq('kid_id', kidId).order('created_at')
+      return res.json(data || [])
+    }
+
+    // PUT /api/admin/rewards/:id — edit title/emoji/price/star cost in place, so a
+    // parent can put a star cost on rewards that already exist without re-creating them.
+    if (method === 'PUT' && slug[0] === 'admin' && slug[1] === 'rewards' && slug[2]) {
+      const updates = {}
+      if (req.body.title !== undefined) {
+        if (!req.body.title) return res.status(400).json({ error: 'Title required' })
+        updates.title = req.body.title
+      }
+      if (req.body.emoji !== undefined) updates.emoji = req.body.emoji || '🎁'
+      if (req.body.price !== undefined) {
+        const cents = Math.round(Number(req.body.price) * 100) / 100
+        if (isNaN(cents) || cents < 0) return res.status(400).json({ error: 'Invalid price' })
+        updates.price = cents
+      }
+      if (req.body.starCost !== undefined) {
+        const stars = Math.round(Number(req.body.starCost))
+        if (isNaN(stars) || stars < 0) return res.status(400).json({ error: 'Invalid star cost' })
+        updates.star_cost = stars
+      }
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('rewards').update(updates).eq('id', slug[2]).eq('kid_id', kidId)
+      }
+      const { data } = await supabase.from('rewards').select('*').eq('kid_id', kidId).order('created_at')
+      return res.json(data || [])
+    }
+
+    // DELETE /api/admin/rewards/:id
+    if (method === 'DELETE' && slug[0] === 'admin' && slug[1] === 'rewards' && slug[2]) {
+      await supabase.from('rewards').delete().eq('id', slug[2]).eq('kid_id', kidId)
+      const { data } = await supabase.from('rewards').select('*').eq('kid_id', kidId).order('created_at')
+      return res.json(data || [])
+    }
+
+    // POST /api/rewards/:id/redeem — kid-facing star redemption.
+    // No admin/ prefix, so it clears the kid∈family check without needing the PIN.
+    // The reward stays in the catalog and can be earned again.
+    if (method === 'POST' && slug[0] === 'rewards' && slug[2] === 'redeem') {
+      const { data: reward } = await supabase.from('rewards').select('*').eq('id', slug[1]).eq('kid_id', kidId).single()
+      if (!reward) return res.status(404).json({ error: 'Reward not found' })
+
+      const cost = Math.round(Number(reward.star_cost))
+      if (isNaN(cost) || cost <= 0) return res.status(400).json({ error: 'This reward has no star cost yet' })
+
+      // Recompute the balance server-side. Never trust a client-sent number, and
+      // never rely on the UI having hidden the button.
+      const chores = await checkAndResetChores(kidId)
+      const settings = await getSettings(kidId)
+      const current = await starsFor(kidId, chores, settings)
+      if (cost > current.balance) return res.status(400).json({ error: 'Not enough stars yet!' })
+
+      const transactions = [...current.transactions, {
+        id: `st${Date.now()}`,
+        rewardId: reward.id,
+        title: reward.title,
+        emoji: reward.emoji,
+        cost,
+        date: getTodayKey()
+      }]
+      if (transactions.length > 50) transactions.splice(0, transactions.length - 50)
+
+      await supabase.from('balance')
+        .update({ stars_spent: current.spent + cost, star_transactions: transactions })
+        .eq('kid_id', kidId)
+
+      return res.json(await starsFor(kidId, chores, settings))
+    }
+
+    // POST /api/admin/rewards/:id/redeem — debit the savings jar, keep the reward in the catalog
+    if (method === 'POST' && slug[0] === 'admin' && slug[1] === 'rewards' && slug[3] === 'redeem') {
+      const { data: reward } = await supabase.from('rewards').select('*').eq('id', slug[2]).eq('kid_id', kidId).single()
+      if (!reward) return res.status(404).json({ error: 'Reward not found' })
+      const amount = Math.round(Number(reward.price) * 100) / 100
+      if (isNaN(amount) || amount <= 0) return res.status(400).json({ error: 'Invalid price' })
+      const { data } = await supabase.from('balance').select('*').eq('kid_id', kidId).single()
+      const current = Number(data?.balance || 0)
+      if (amount > current) return res.status(400).json({ error: 'Not enough in the savings jar' })
+      const newBalance = Math.round((current - amount) * 100) / 100
+      const transactions = [...(data.transactions || []), {
+        id: `tx${Date.now()}`, type: 'spend', amount,
+        note: `${reward.emoji} ${reward.title}`,
+        date: new Date().toISOString().split('T')[0]
+      }]
+      if (transactions.length > 50) transactions.splice(0, transactions.length - 50)
+      await supabase.from('balance').update({ balance: newBalance, transactions }).eq('kid_id', kidId)
+      return res.json({ balance: newBalance, transactions })
     }
 
     res.status(404).json({ error: 'Not found' })

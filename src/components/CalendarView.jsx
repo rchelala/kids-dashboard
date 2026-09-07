@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ChallengePanel from './ChallengePanel'
+import RewardShop from './RewardShop'
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -24,7 +25,7 @@ function formatEventDate(dateStr) {
   return `${MONTH_NAMES[m - 1].slice(0, 3)} ${d}`
 }
 
-export default function CalendarView({ events, challenges, onChallengeToggle }) {
+export default function CalendarView({ events, challenges, onChallengeToggle, rewards, balance, stars, onRedeemReward }) {
   const today = new Date()
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
@@ -58,9 +59,10 @@ export default function CalendarView({ events, challenges, onChallengeToggle }) 
       <div className="right-panel-tabs">
         <button className={`right-tab-btn ${tab === 'calendar' ? 'active' : ''}`} onClick={() => setTab('calendar')}>📅 Calendar</button>
         <button className={`right-tab-btn ${tab === 'challenges' ? 'active' : ''}`} onClick={() => setTab('challenges')}>💪 Challenges</button>
+        <button className={`right-tab-btn ${tab === 'rewards' ? 'active' : ''}`} onClick={() => setTab('rewards')}>🎁 Rewards</button>
       </div>
 
-      {tab === 'calendar' ? (
+      {tab === 'calendar' && (
         <>
           <div className="calendar-header">
             <button className="cal-nav-btn" onClick={prevMonth}>◀</button>
@@ -99,8 +101,14 @@ export default function CalendarView({ events, challenges, onChallengeToggle }) 
             )}
           </div>
         </>
-      ) : (
+      )}
+
+      {tab === 'challenges' && (
         <ChallengePanel challenges={challenges || []} onToggle={onChallengeToggle} />
+      )}
+
+      {tab === 'rewards' && (
+        <RewardShop rewards={rewards || []} balance={balance} stars={stars} onRedeem={onRedeemReward} />
       )}
     </div>
   )

@@ -20,8 +20,9 @@ function formatDate(dateStr) {
 }
 
 const CHALLENGE_EMOJIS = ['💪', '🏃', '🤸', '🧘', '🚴', '🏋️', '⭐', '🔥', '🎯', '🏆', '🦁', '🚀', '🌟', '💥', '🎉']
+const REWARD_EMOJIS = ['🎁', '🎮', '🍦', '🎬', '🧸', '🍕', '🚲', '📱', '🎨', '🎸', '⚽', '🛼', '🍿', '🎟️', '💎']
 
-export default function AdminPanel({ chores, alarms, events, settings, balance, challenges, kid, familyId, authFetch, onClose, onSwitchKid }) {
+export default function AdminPanel({ chores, alarms, events, settings, balance, challenges, rewards, stars, kid, familyId, authFetch, onClose, onSwitchKid }) {
   const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')
   const [pwError, setPwError] = useState('')
@@ -51,11 +52,14 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
       adminFetch('/api/alarms').then(r => r.json()),
       adminFetch('/api/balance').then(r => r.json()),
       adminFetch('/api/challenges').then(r => r.json()),
-    ]).then(([c, a, b, ch]) => {
+      adminFetch('/api/rewards').then(r => r.json()),
+    ]).then(([c, a, b, ch, rw]) => {
       setLocalChores(c)
+      if (c?.stars) setLocalStars(c.stars)
       setLocalAlarms(a)
       setLocalBalance(b)
       setLocalChallenges(Array.isArray(ch) ? ch : [])
+      setLocalRewards(Array.isArray(rw) ? rw : [])
     }).catch(console.error)
   }, [managingKidId, authed])
 
@@ -64,6 +68,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   const [localAlarms, setLocalAlarms] = useState(alarms)
   const [localEvents, setLocalEvents] = useState(events)
   const [localBalance, setLocalBalance] = useState(balance)
+  const [localStars, setLocalStars] = useState(stars)
 
   // Weekday chore form
   const [newWdName, setNewWdName] = useState('')
@@ -160,10 +165,66 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     setLocalChallenges(await res.json())
   }
 
+  // Rewards
+  const [localRewards, setLocalRewards] = useState(rewards || [])
+  const [newRewardTitle, setNewRewardTitle] = useState('')
+  const [newRewardEmoji, setNewRewardEmoji] = useState('🎁')
+  const [newRewardPrice, setNewRewardPrice] = useState('')
+  const [newRewardStars, setNewRewardStars] = useState('')
+
+  async function addReward() {
+    if (!newRewardTitle.trim()) return
+    const res = await adminFetch('/api/admin/rewards', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: newRewardTitle.trim(),
+        emoji: newRewardEmoji,
+        price: newRewardPrice ? Number(newRewardPrice) : 0,
+        starCost: newRewardStars ? Number(newRewardStars) : 0
+      })
+    })
+    const data = await res.json()
+    if (!res.ok) { alert('Error saving reward: ' + (data?.error || res.status)); return }
+    setLocalRewards(data)
+    setNewRewardTitle('')
+    setNewRewardEmoji('🎁')
+    setNewRewardPrice('')
+    setNewRewardStars('')
+  }
+
+  // Set the star cost on an existing reward. A reward with a cost of 0 is not
+  // redeemable by the kid, so this is how a parent turns one on.
+  async function updateRewardStars(id, starCost) {
+    const res = await adminFetch(`/api/admin/rewards/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ starCost: Number(starCost) || 0 })
+    })
+    const data = await res.json()
+    if (!res.ok) { alert('Error updating reward: ' + (data?.error || res.status)); return }
+    setLocalRewards(data)
+  }
+
+  async function deleteReward(id) {
+    const res = await adminFetch(`/api/admin/rewards/${id}`, { method: 'DELETE' })
+    const data = await res.json()
+    if (!res.ok) { alert('Error deleting reward: ' + (data?.error || res.status)); return }
+    setLocalRewards(data)
+  }
+
+  async function redeemReward(reward) {
+    const price = Number(reward.price).toFixed(2)
+    if (!window.confirm(`Redeem "${reward.title}" for $${price}? This takes $${price} out of the Savings Jar.`)) return
+    const res = await adminFetch(`/api/admin/rewards/${reward.id}/redeem`, { method: 'POST' })
+    const data = await res.json()
+    if (!res.ok) { alert('Could not redeem: ' + (data?.error || res.status)); return }
+    setLocalBalance(data)
+  }
+
   // Settings form
   const [newName, setNewName] = useState('')
   const [newAllowance, setNewAllowance] = useState('')
   const [newDeduction, setNewDeduction] = useState('')
+  const [newStarsPerDay, setNewStarsPerDay] = useState('')
   const [newAdminPin, setNewAdminPin] = useState('')
   const [newInviteCode, setNewInviteCode] = useState('')
   const [newDailyMessage, setNewDailyMessage] = useState('')
@@ -354,6 +415,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     if (newName.trim()) body.childName = newName.trim()
     if (newAllowance) body.allowanceAmount = Number(newAllowance)
     if (newDeduction) body.deductionPerMissedChore = Number(newDeduction)
+    if (newStarsPerDay !== '') body.starsPerDay = Number(newStarsPerDay)
     if (newAdminPin.trim()) body.adminPin = newAdminPin.trim()
     if (newInviteCode.trim()) body.inviteCode = newInviteCode.trim().toUpperCase()
     if (newDailyMessage !== '') body.dailyMessage = newDailyMessage.trim()
@@ -410,13 +472,13 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
         ) : (
           <>
             <div className="admin-tabs">
-              {['chores', 'weekend', 'alarms', 'calendar', 'challenges', 'wallet', 'history', 'kids', 'settings'].map(t => (
+              {['chores', 'weekend', 'alarms', 'calendar', 'challenges', 'rewards', 'wallet', 'history', 'kids', 'settings'].map(t => (
                 <button
                   key={t}
                   className={`tab-btn ${tab === t ? 'active' : ''}`}
                   onClick={() => { setTab(t); if (t === 'kids') loadKids() }}
                 >
-                  {{ chores: '📋 Everyday', weekend: '🌟 Weekend', alarms: '⏰ Alarms', calendar: '📅 Calendar', challenges: '💪 Challenges', wallet: '🐷 Wallet', history: '📊 History', kids: '👶 Kids', settings: '🔧 Settings' }[t]}
+                  {{ chores: '📋 Everyday', weekend: '🌟 Weekend', alarms: '⏰ Alarms', calendar: '📅 Calendar', challenges: '💪 Challenges', rewards: '🎁 Rewards', wallet: '🐷 Wallet', history: '📊 History', kids: '👶 Kids', settings: '🔧 Settings' }[t]}
                 </button>
               ))}
             </div>
@@ -774,6 +836,125 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                 </>
               )}
 
+              {/* ── REWARDS ──────────────────────────────────────────────── */}
+              {tab === 'rewards' && (
+                <>
+                  <div className="admin-section-title">Add Reward</div>
+                  <div className="admin-form-row" style={{ alignItems: 'flex-start' }}>
+                    <div className="admin-input-group">
+                      <label className="admin-label">Name</label>
+                      <input
+                        className="admin-input"
+                        placeholder="e.g. Extra screen time"
+                        value={newRewardTitle}
+                        onChange={e => setNewRewardTitle(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addReward()}
+                      />
+                    </div>
+                    <div className="admin-input-group" style={{ maxWidth: 110 }}>
+                      <label className="admin-label">Price ($)</label>
+                      <input
+                        className="admin-input"
+                        type="number"
+                        step="0.25"
+                        min="0"
+                        placeholder="5.00"
+                        value={newRewardPrice}
+                        onChange={e => setNewRewardPrice(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addReward()}
+                      />
+                    </div>
+                    <div className="admin-input-group" style={{ maxWidth: 110 }}>
+                      <label className="admin-label">Stars (⭐)</label>
+                      <input
+                        className="admin-input"
+                        type="number"
+                        step="1"
+                        min="0"
+                        placeholder="10"
+                        value={newRewardStars}
+                        onChange={e => setNewRewardStars(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addReward()}
+                      />
+                    </div>
+                    <button className="admin-btn-add" onClick={addReward}>Add</button>
+                  </div>
+                  <div>
+                    <label className="admin-label">Emoji</label>
+                    <div className="emoji-picker">
+                      {REWARD_EMOJIS.map(em => (
+                        <span key={em} className={`emoji-option ${newRewardEmoji === em ? 'selected' : ''}`} onClick={() => setNewRewardEmoji(em)}>{em}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="admin-section-title" style={{ marginTop: 12 }}>
+                    Reward Shop — ⭐ {Math.max(0, Number(localStars?.balance || 0))} stars · Savings Jar: ${Number(localBalance?.balance || 0).toFixed(2)}
+                  </div>
+                  <div className="admin-list-item-sub" style={{ marginBottom: 8 }}>
+                    Stars are earned by finishing every chore in a day ({localStars?.starsPerDay ?? 5} ⭐ per full day).
+                    Set a star cost below to let {settings?.childName || 'your kid'} redeem a reward themselves.
+                  </div>
+                  <div className="admin-list">
+                    {localRewards.map(r => {
+                      const price = Number(r.price)
+                      const affordable = price > 0 && price <= Number(localBalance?.balance || 0)
+                      return (
+                        <div key={r.id} className="admin-list-item">
+                          <span style={{ fontSize: '1.4rem' }}>{r.emoji}</span>
+                          <div className="admin-list-item-info">{r.title}
+                            <div className="admin-list-item-sub">
+                              ${price.toFixed(2)}{affordable ? ' — can afford' : ''}
+                              {Number(r.star_cost || 0) === 0 && ' — no star cost, kid can\'t redeem'}
+                            </div>
+                          </div>
+                          <div className="admin-input-group" style={{ maxWidth: 76 }}>
+                            <label className="admin-label">⭐</label>
+                            <input
+                              className="admin-input"
+                              type="number"
+                              step="1"
+                              min="0"
+                              defaultValue={Number(r.star_cost || 0)}
+                              onBlur={e => {
+                                const next = Number(e.target.value) || 0
+                                if (next !== Number(r.star_cost || 0)) updateRewardStars(r.id, next)
+                              }}
+                              onKeyDown={e => e.key === 'Enter' && e.target.blur()}
+                            />
+                          </div>
+                          <button
+                            className="admin-btn-secondary"
+                            disabled={!affordable}
+                            onClick={() => redeemReward(r)}
+                          >
+                            Redeem
+                          </button>
+                          <button className="admin-btn-danger" onClick={() => deleteReward(r.id)}>Remove</button>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {localStars?.transactions?.length > 0 && (
+                    <>
+                      <div className="admin-section-title" style={{ marginTop: 12 }}>Star Redemptions</div>
+                      <div className="admin-list">
+                        {[...localStars.transactions].reverse().map(t => (
+                          <div key={t.id} className="admin-list-item">
+                            <span style={{ fontSize: '1.4rem' }}>{t.emoji}</span>
+                            <div className="admin-list-item-info">{t.title}
+                              <div className="admin-list-item-sub">{t.date}</div>
+                            </div>
+                            <span style={{ fontWeight: 800, color: '#FBBF24' }}>-{t.cost} ⭐</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
               {/* ── WALLET ───────────────────────────────────────────────── */}
               {tab === 'wallet' && (
                 <>
@@ -971,6 +1152,10 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                   <div className="admin-input-group">
                     <label className="admin-label">Deduction per Missed Chore ($)</label>
                     <input type="number" className="admin-input" placeholder={settings?.deductionPerMissedChore ?? 0.25} value={newDeduction} min="0" step="0.05" onChange={e => setNewDeduction(e.target.value)} />
+                  </div>
+                  <div className="admin-input-group">
+                    <label className="admin-label">Stars per Full Day (⭐ earned for finishing every chore in a day)</label>
+                    <input type="number" className="admin-input" placeholder={settings?.starsPerDay ?? 5} value={newStarsPerDay} min="0" step="1" onChange={e => setNewStarsPerDay(e.target.value)} />
                   </div>
                   <div className="admin-input-group">
                     <label className="admin-label">Weekly Reward (what Asher earns for completing all chores)</label>

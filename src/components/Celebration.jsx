@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
 import confetti from 'canvas-confetti'
 
-export default function Celebration({ childName, earnings, allowance, type, onDone }) {
+export default function Celebration({ childName, earnings, allowance, type, stars, onDone }) {
   const intervalRef = useRef(null)
   const isFullWeek = type === 'weekend'
   const isMaxEarnings = earnings != null && allowance != null && earnings >= allowance
+  const starBalance = stars ? Math.max(0, Number(stars.balance || 0)) : null
+  const starsPerDay = Number(stars?.starsPerDay || 0)
 
   useEffect(() => {
     const fire = () => {
@@ -66,6 +68,12 @@ export default function Celebration({ childName, earnings, allowance, type, onDo
             </div>
           )}
         </>
+      )}
+
+      {starBalance != null && starsPerDay > 0 && (
+        <div className="celebration-stars-earned">
+          +{starsPerDay} ⭐ — you have {starBalance} {starBalance === 1 ? 'star' : 'stars'}!
+        </div>
       )}
 
       <button className="celebration-done-btn" onClick={onDone}>

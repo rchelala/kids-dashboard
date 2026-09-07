@@ -32,6 +32,7 @@ async function getSettings(kidId) {
     kidEmoji: data.emoji,
     allowanceAmount: Number(data.allowance_amount),
     deductionPerMissedChore: Number(data.deduction_per_missed_chore),
+    starsPerDay: Number(data.stars_per_day ?? 5),
     icalUrl: data.ical_url,
     rewardDescription: data.reward_description || ''
   }
@@ -42,6 +43,7 @@ async function updateSettings(kidId, updates) {
   if (updates.childName !== undefined) dbUpdates.name = updates.childName
   if (updates.allowanceAmount !== undefined) dbUpdates.allowance_amount = updates.allowanceAmount
   if (updates.deductionPerMissedChore !== undefined) dbUpdates.deduction_per_missed_chore = updates.deductionPerMissedChore
+  if (updates.starsPerDay !== undefined) dbUpdates.stars_per_day = updates.starsPerDay
   if (updates.icalUrl !== undefined) dbUpdates.ical_url = updates.icalUrl
   if (updates.rewardDescription !== undefined) dbUpdates.reward_description = updates.rewardDescription
   const { data } = await supabase.from('kids').update(dbUpdates).eq('id', kidId).select().single()
@@ -51,6 +53,7 @@ async function updateSettings(kidId, updates) {
     kidEmoji: data.emoji,
     allowanceAmount: Number(data.allowance_amount),
     deductionPerMissedChore: Number(data.deduction_per_missed_chore),
+    starsPerDay: Number(data.stars_per_day ?? 5),
     icalUrl: data.ical_url,
     rewardDescription: data.reward_description || ''
   }
@@ -157,6 +160,78 @@ function calculateEarnings(chores, settings) {
   }
 }
 
+// ── Stars ─────────────────────────────────────────────────────────────────────
+
+// Stars for the CURRENT week, derived fresh from chore state on every call.
+//
+// Stars are never incremented by a toggle handler. Incrementing a counter on
+// toggle would double-credit on uncheck/recheck and race the kiosk's 5-minute
+// poll. Deriving instead makes the computation idempotent: unchecking a chore
+// that breaks a completed day simply removes those stars, no compensating
+// bookkeeping required. The only stars ever *written* are banked at the weekly
+// rollover in checkAndResetChores(), which runs exactly once per week.
+//
+// Earning is all-or-nothing per day: a partial day earns nothing.
+function computeWeekStars(chores, settings) {
+  const starsPerDay = Number(settings?.starsPerDay ?? 5)
+  const weekStart = new Date(chores.currentWeek)
+  const today = new Date()
+  today.setHours(23, 59, 59, 999)
+
+  const weekdayItems = chores.weekday?.items || []
+  const weekdayCompletions = chores.weekday?.completions || {}
+
+  let completedDays = 0
+  if (weekdayItems.length > 0) {
+    for (let d = new Date(weekStart); d <= today; d.setDate(d.getDate() + 1)) {
+      const day = d.toISOString().split('T')[0]
+      const done = weekdayCompletions[day] || []
+      if (weekdayItems.every(item => done.includes(item.id))) completedDays++
+    }
+  }
+
+  // The weekend list has no per-day structure — it's one active set with a
+  // boolean completion map — so the whole set counts as a single "day".
+  const activeWeekend = chores.weekend?.active || []
+  const weekendCompletions = chores.weekend?.completions || {}
+  if (activeWeekend.length > 0 && activeWeekend.every(id => weekendCompletions[id])) {
+    completedDays++
+  }
+
+  return { stars: completedDays * starsPerDay, completedDays, starsPerDay }
+}
+
+// The kid's live star position: banked (from past weeks) + this week's derived
+// stars, less what's been spent. Because the current week is derived rather
+// than counted, this is always consistent with what's on screen.
+//
+// `balance` may go negative if a kid redeems and then unchecks a chore that
+// breaks a completed day. That's kept honest here and clamped only for display;
+// it self-heals as soon as the day is completed again.
+async function starsFor(kidId, chores, settings) {
+  const { data } = await supabase
+    .from('balance')
+    .select('stars_banked, stars_spent, star_transactions')
+    .eq('kid_id', kidId)
+    .single()
+
+  const banked = Number(data?.stars_banked || 0)
+  const spent = Number(data?.stars_spent || 0)
+  const week = computeWeekStars(chores, settings)
+  const earned = banked + week.stars
+
+  return {
+    balance: earned - spent,
+    earned,
+    banked,
+    spent,
+    thisWeek: week.stars,
+    completedDays: week.completedDays,
+    starsPerDay: week.starsPerDay,
+    transactions: data?.star_transactions || []
+  }
+}
+
 // ── Weekly reset ──────────────────────────────────────────────────────────────
 
 async function checkAndResetChores(kidId) {
@@ -166,8 +241,18 @@ async function checkAndResetChores(kidId) {
 
   if (chores.currentWeek !== currentWeek) {
     const lastEarnings = calculateEarnings(chores, settings)
+    const lastStars = computeWeekStars(chores, settings)
+
+    // Bank the outgoing week's stars before the completions that derive them
+    // are wiped. This branch is the once-per-week guard, so it cannot double-bank.
+    if (lastStars.stars > 0) {
+      const { data: bal } = await supabase.from('balance').select('stars_banked').eq('kid_id', kidId).single()
+      const banked = Number(bal?.stars_banked || 0) + lastStars.stars
+      await supabase.from('balance').update({ stars_banked: banked }).eq('kid_id', kidId)
+    }
+
     if (!chores.history) chores.history = []
-    chores.history.push({ week: chores.currentWeek, ...lastEarnings, archivedAt: new Date().toISOString() })
+    chores.history.push({ week: chores.currentWeek, ...lastEarnings, stars: lastStars.stars, archivedAt: new Date().toISOString() })
     if (chores.history.length > 10) chores.history = chores.history.slice(-10)
 
     chores.weekday = { ...chores.weekday, completions: {} }
@@ -233,6 +318,8 @@ module.exports = {
   getChoresRaw,
   writeChores,
   calculateEarnings,
+  computeWeekStars,
+  starsFor,
   checkAndResetChores,
   getICalEvents
 }

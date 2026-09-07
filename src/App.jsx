@@ -79,6 +79,8 @@ export default function App() {
   const [settings, setSettings] = useState(null)
   const [balance, setBalance] = useState(null)
   const [challenges, setChallenges] = useState([])
+  const [rewards, setRewards] = useState([])
+  const [stars, setStars] = useState(null)
   const [showAdmin, setShowAdmin] = useState(false)
   const [showCelebration, setShowCelebration] = useState(null)
   const [activeAlarm, setActiveAlarm] = useState(null)
@@ -123,6 +125,8 @@ export default function App() {
       if (data.settings) setSettings(data.settings)
       if (data.balance) setBalance(data.balance)
       setChallenges(Array.isArray(data.challenges) ? data.challenges : [])
+      setRewards(Array.isArray(data.rewards) ? data.rewards : [])
+      if (data.stars) setStars(data.stars)
     } catch (err) {
       console.error('Failed to fetch data:', err)
     }
@@ -186,6 +190,7 @@ export default function App() {
       const res = await authFetch(`/api/chores/weekday/${choreId}/toggle`, { method: 'POST' })
       const updated = await res.json()
       setChores(updated)
+      if (updated.stars) setStars(updated.stars)
       setLastChoreCheckedAt(Date.now())
       checkCelebration(updated)
     } catch (err) { console.error(err) }
@@ -196,9 +201,24 @@ export default function App() {
       const res = await authFetch(`/api/chores/weekend/${choreId}/toggle`, { method: 'POST' })
       const updated = await res.json()
       setChores(updated)
+      if (updated.stars) setStars(updated.stars)
       setLastChoreCheckedAt(Date.now())
       checkCelebration(updated)
     } catch (err) { console.error(err) }
+  }
+
+  // Returns null on success, or a message the confirm dialog shows to the kid.
+  const handleRedeemReward = async (rewardId) => {
+    try {
+      const res = await authFetch(`/api/rewards/${rewardId}/redeem`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) return data?.error || 'Something went wrong'
+      setStars(data)
+      return null
+    } catch (err) {
+      console.error(err)
+      return 'Something went wrong'
+    }
   }
 
   const handleCelebrationDone = async () => {
@@ -282,7 +302,7 @@ export default function App() {
             />
           </div>
           <div className="right-panel">
-            <CalendarView events={events} challenges={challenges} onChallengeToggle={handleChallengeToggle} />
+            <CalendarView events={events} challenges={challenges} onChallengeToggle={handleChallengeToggle} rewards={rewards} balance={balance} stars={stars} onRedeemReward={handleRedeemReward} />
           </div>
         </div>
         <div className="bottom-section">
@@ -296,6 +316,7 @@ export default function App() {
           earnings={chores.earnings?.earnings}
           allowance={settings.allowanceAmount}
           type={showCelebration.type}
+          stars={stars}
           onDone={handleCelebrationDone}
         />
       )}
@@ -308,6 +329,8 @@ export default function App() {
           settings={settings}
           balance={balance}
           challenges={challenges}
+          rewards={rewards}
+          stars={stars}
           kid={authCtx.kid}
           familyId={authCtx.familyId}
           authFetch={authFetch}

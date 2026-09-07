@@ -400,13 +400,14 @@ html, body, #root {
 
 .right-tab-btn {
   flex: 1;
-  padding: 7px 10px;
+  padding: 7px 6px;
   border-radius: 10px;
   border: 1.5px solid rgba(255,255,255,0.1);
   background: rgba(255,255,255,0.04);
   color: var(--text-muted);
   font-family: var(--font);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
@@ -508,6 +509,196 @@ html, body, #root {
   gap: 8px;
   color: var(--text-muted);
   text-align: center;
+}
+
+/* ── Reward shop ──────────────────────────────────────────────────────────── */
+.reward-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.reward-list::-webkit-scrollbar { width: 4px; }
+.reward-list::-webkit-scrollbar-track { background: transparent; }
+.reward-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+.reward-jar {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #FBBF24;
+  padding-bottom: 2px;
+  flex-shrink: 0;
+}
+
+.reward-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.08);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.reward-item.locked {
+  opacity: 0.45;
+}
+
+.reward-emoji { font-size: 1.6rem; flex-shrink: 0; }
+
+.reward-title {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.reward-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #FBBF24;
+  flex-shrink: 0;
+}
+
+.reward-needed {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.reward-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ── Star currency + redeem ───────────────────────────────────────────────── */
+.reward-stars {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #FBBF24;
+  flex-shrink: 0;
+}
+
+.reward-redeem-btn {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 12px;
+  background: var(--green);
+  color: #06281c;
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transition: transform 0.15s;
+}
+
+.reward-redeem-btn:active { transform: scale(0.94); }
+
+.reward-flash {
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--green);
+}
+
+/* Opaque background, no backdrop-filter: a full-screen blur on the Pi starves
+   the main thread and touch input silently stops landing. */
+.reward-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 450;
+  background: #080b1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.reward-confirm-modal {
+  background: #131834;
+  border: 2px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  text-align: center;
+  max-width: 420px;
+  width: 100%;
+}
+
+.reward-confirm-emoji { font-size: 3.5rem; line-height: 1; }
+
+.reward-confirm-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-top: 8px;
+}
+
+.reward-confirm-cost {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #FBBF24;
+  margin-top: 6px;
+}
+
+.reward-confirm-error {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--coral);
+  margin-top: 10px;
+}
+
+.reward-confirm-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.reward-confirm-actions button {
+  flex: 1;
+  padding: 16px 12px;
+  border: none;
+  border-radius: 14px;
+  font-family: var(--font);
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.reward-confirm-actions button:disabled { opacity: 0.5; }
+
+.reward-confirm-no {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.reward-confirm-yes {
+  background: var(--green);
+  color: #06281c;
+}
+
+.celebration-stars-earned {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #FBBF24;
+  margin-bottom: 10px;
 }
 
 .chore-progress {
@@ -1100,6 +1291,19 @@ label.admin-label {
   transition: background 0.15s;
 }
 .admin-btn-secondary:hover { background: rgba(255,255,255,0.1); }
+
+.admin-btn-secondary:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.admin-btn-secondary:disabled:hover { background: rgba(255,255,255,0.06); }
+
+/* Compact inside list rows, where it sits next to Remove */
+.admin-list-item .admin-btn-secondary {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
 
 /* Admin list items */
 .admin-list { display: flex; flex-direction: column; gap: 8px; }
