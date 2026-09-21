@@ -295,8 +295,6 @@ export default function App() {
           <div className="left-panel">
             <ChoreList
               chores={chores}
-              settings={settings}
-              balance={balance}
               onWeekdayToggle={handleWeekdayToggle}
               onWeekendToggle={handleWeekendToggle}
             />

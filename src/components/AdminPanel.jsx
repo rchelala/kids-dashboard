@@ -228,7 +228,6 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
   const [newAdminPin, setNewAdminPin] = useState('')
   const [newInviteCode, setNewInviteCode] = useState('')
   const [newDailyMessage, setNewDailyMessage] = useState('')
-  const [newReward, setNewReward] = useState('')
   const [settingsSaved, setSettingsSaved] = useState(false)
 
   // ── Auth ────────────────────────────────────────────────────────────────────
@@ -419,7 +418,6 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     if (newAdminPin.trim()) body.adminPin = newAdminPin.trim()
     if (newInviteCode.trim()) body.inviteCode = newInviteCode.trim().toUpperCase()
     if (newDailyMessage !== '') body.dailyMessage = newDailyMessage.trim()
-    if (newReward !== '') body.rewardDescription = newReward.trim()
     if (Object.keys(body).length === 0) return
     await adminFetch('/api/admin/settings', {
       method: 'PUT',
@@ -428,7 +426,7 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     })
     setSettingsSaved(true)
     setTimeout(() => setSettingsSaved(false), 2000)
-    setNewName(''); setNewAllowance(''); setNewDeduction(''); setNewAdminPin(''); setNewInviteCode(''); setNewDailyMessage(''); setNewReward('')
+    setNewName(''); setNewAllowance(''); setNewDeduction(''); setNewAdminPin(''); setNewInviteCode(''); setNewDailyMessage('')
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -1156,20 +1154,6 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                   <div className="admin-input-group">
                     <label className="admin-label">Stars per Full Day (⭐ earned for finishing every chore in a day)</label>
                     <input type="number" className="admin-input" placeholder={settings?.starsPerDay ?? 5} value={newStarsPerDay} min="0" step="1" onChange={e => setNewStarsPerDay(e.target.value)} />
-                  </div>
-                  <div className="admin-input-group">
-                    <label className="admin-label">Weekly Reward (what Asher earns for completing all chores)</label>
-                    {settings?.rewardDescription && (
-                      <div style={{ background: 'rgba(78,205,196,0.1)', border: '1px solid rgba(78,205,196,0.3)', borderRadius: 12, padding: '10px 16px', marginBottom: 8, fontSize: '0.9rem', color: 'var(--teal)' }}>
-                        Current: "{settings.rewardDescription}"
-                      </div>
-                    )}
-                    <input
-                      className="admin-input"
-                      placeholder="e.g. 1 day of video games"
-                      value={newReward}
-                      onChange={e => setNewReward(e.target.value)}
-                    />
                   </div>
                   <div className="admin-section-title" style={{ marginTop: 16 }}>Family Invite Code</div>
                   <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>

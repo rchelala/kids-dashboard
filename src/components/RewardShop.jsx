@@ -44,12 +44,18 @@ export default function RewardShop({ rewards, balance, stars, onRedeem }) {
     flashTimer.current = setTimeout(() => setFlashId(null), FLASH_MS)
   }
 
+  // The star total shows even with an empty catalog — it's the only place it
+  // appears, so hiding it here would leave no way to see how many he has.
   if (rewards.length === 0) {
     return (
-      <div className="reward-empty">
-        <div style={{ fontSize: '2.5rem' }}>🎁</div>
-        <div style={{ fontWeight: 700 }}>No rewards yet!</div>
-        <div style={{ fontSize: '0.85rem', opacity: 0.6, marginTop: 4 }}>Dad will add one soon</div>
+      <div className="reward-list">
+        <div className="reward-stars">⭐ {starBalance} {starBalance === 1 ? 'star' : 'stars'}</div>
+        <div className="reward-jar">🐷 Savings Jar: ${jar.toFixed(2)}</div>
+        <div className="reward-empty">
+          <div style={{ fontSize: '2.5rem' }}>🎁</div>
+          <div style={{ fontWeight: 700 }}>No rewards yet!</div>
+          <div style={{ fontSize: '0.85rem', opacity: 0.6, marginTop: 4 }}>Dad will add one soon</div>
+        </div>
       </div>
     )
   }

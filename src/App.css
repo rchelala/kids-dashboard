@@ -730,34 +730,6 @@ html, body, #root {
   justify-content: space-between;
 }
 
-.allowance-badge {
-  margin-top: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 215, 0, 0.12);
-  border: 1.5px solid rgba(255, 215, 0, 0.3);
-  border-radius: 99px;
-  padding: 6px 14px;
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--gold);
-}
-
-.savings-badge {
-  margin-top: 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(52, 211, 153, 0.1);
-  border: 1.5px solid rgba(52, 211, 153, 0.3);
-  border-radius: 99px;
-  padding: 6px 14px;
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--green);
-}
-
 /* ── Calendar ─────────────────────────────────────────────────────────────── */
 .calendar-header {
   display: flex;
