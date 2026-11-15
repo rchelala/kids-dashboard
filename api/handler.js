@@ -407,6 +407,38 @@ module.exports = async function handler(req, res) {
       return res.json({ balance: newBalance, transactions })
     }
 
+    // POST /api/admin/stars/adjust — parent adds (positive) or removes (negative)
+    // stars. Goes into stars_banked, since this week's stars are derived from
+    // chores and can't be written directly.
+    if (method === 'POST' && path === 'admin/stars/adjust') {
+      const amount = Math.round(Number(req.body.amount))
+      if (isNaN(amount) || amount === 0) return res.status(400).json({ error: 'Enter a number of stars' })
+
+      const chores = await checkAndResetChores(kidId)
+      const settings = await getSettings(kidId)
+      const current = await starsFor(kidId, chores, settings)
+      if (amount < 0 && -amount > Math.max(0, current.balance)) {
+        return res.status(400).json({ error: `Only ${Math.max(0, current.balance)} stars to remove` })
+      }
+
+      const note = typeof req.body.note === 'string' ? req.body.note.trim() : ''
+      const transactions = [...current.transactions, {
+        id: `st${Date.now()}`,
+        type: 'adjust',
+        amount,
+        title: note || (amount > 0 ? 'Bonus stars' : 'Stars removed'),
+        emoji: amount > 0 ? '🌟' : '➖',
+        date: getTodayKey()
+      }]
+      if (transactions.length > 50) transactions.splice(0, transactions.length - 50)
+
+      await supabase.from('balance')
+        .update({ stars_banked: current.banked + amount, star_transactions: transactions })
+        .eq('kid_id', kidId)
+
+      return res.json(await starsFor(kidId, chores, settings))
+    }
+
     // POST /api/admin/chores/weekday
     if (method === 'POST' && path === 'admin/chores/weekday') {
       const chores = await getChoresRaw(kidId)

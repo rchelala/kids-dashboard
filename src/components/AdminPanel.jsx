@@ -220,6 +220,25 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
     setLocalBalance(data)
   }
 
+  // Manual star adjustment. sign is +1 (add) or -1 (remove), so the parent never
+  // has to type a minus sign on the touchscreen.
+  const [starAdjustAmount, setStarAdjustAmount] = useState('')
+  const [starAdjustNote, setStarAdjustNote] = useState('')
+
+  async function adjustStars(sign) {
+    const n = Math.abs(Math.round(Number(starAdjustAmount)))
+    if (!n) return
+    const res = await adminFetch('/api/admin/stars/adjust', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: sign * n, note: starAdjustNote.trim() })
+    })
+    const data = await res.json()
+    if (!res.ok) { alert('Could not adjust stars: ' + (data?.error || res.status)); return }
+    setLocalStars(data)
+    setStarAdjustAmount(''); setStarAdjustNote('')
+  }
+
   // Settings form
   const [newName, setNewName] = useState('')
   const [newAllowance, setNewAllowance] = useState('')
@@ -893,6 +912,38 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
                     Stars are earned by finishing every chore in a day ({localStars?.starsPerDay ?? 5} ⭐ per full day).
                     Set a star cost below to let {settings?.childName || 'your kid'} redeem a reward themselves.
                   </div>
+
+                  <div className="admin-section-title" style={{ marginTop: 4 }}>Adjust Stars</div>
+                  <div className="admin-form-row">
+                    <div className="admin-input-group" style={{ maxWidth: 90 }}>
+                      <label className="admin-label">Stars (⭐)</label>
+                      <input
+                        type="number"
+                        className="admin-input"
+                        placeholder="5"
+                        value={starAdjustAmount}
+                        min="1"
+                        step="1"
+                        onChange={e => setStarAdjustAmount(e.target.value)}
+                      />
+                    </div>
+                    <div className="admin-input-group">
+                      <label className="admin-label">Note</label>
+                      <input
+                        className="admin-input"
+                        placeholder="e.g. Helped with dishes"
+                        value={starAdjustNote}
+                        onChange={e => setStarAdjustNote(e.target.value)}
+                      />
+                    </div>
+                    <button className="admin-btn-add" style={{ alignSelf: 'flex-end' }} onClick={() => adjustStars(1)}>
+                      + Add
+                    </button>
+                    <button className="admin-btn-danger" style={{ alignSelf: 'flex-end', padding: '10px 16px', fontSize: '0.9rem' }} onClick={() => adjustStars(-1)}>
+                      − Remove
+                    </button>
+                  </div>
+
                   <div className="admin-list">
                     {localRewards.map(r => {
                       const price = Number(r.price)
@@ -936,17 +987,24 @@ export default function AdminPanel({ chores, alarms, events, settings, balance, 
 
                   {localStars?.transactions?.length > 0 && (
                     <>
-                      <div className="admin-section-title" style={{ marginTop: 12 }}>Star Redemptions</div>
+                      <div className="admin-section-title" style={{ marginTop: 12 }}>Star History</div>
                       <div className="admin-list">
-                        {[...localStars.transactions].reverse().map(t => (
-                          <div key={t.id} className="admin-list-item">
-                            <span style={{ fontSize: '1.4rem' }}>{t.emoji}</span>
-                            <div className="admin-list-item-info">{t.title}
-                              <div className="admin-list-item-sub">{t.date}</div>
+                        {[...localStars.transactions].reverse().map(t => {
+                          const isAdjust = t.type === 'adjust'
+                          const label = isAdjust
+                            ? `${t.amount > 0 ? '+' : '−'}${Math.abs(t.amount)} ⭐`
+                            : `-${t.cost} ⭐`
+                          const color = isAdjust ? (t.amount > 0 ? '#34D399' : '#FF6B6B') : '#FBBF24'
+                          return (
+                            <div key={t.id} className="admin-list-item">
+                              <span style={{ fontSize: '1.4rem' }}>{t.emoji}</span>
+                              <div className="admin-list-item-info">{t.title}
+                                <div className="admin-list-item-sub">{t.date}{isAdjust ? ' · parent adjustment' : ''}</div>
+                              </div>
+                              <span style={{ fontWeight: 800, color }}>{label}</span>
                             </div>
-                            <span style={{ fontWeight: 800, color: '#FBBF24' }}>-{t.cost} ⭐</span>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </>
                   )}
